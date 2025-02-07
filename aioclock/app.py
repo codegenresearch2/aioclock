@@ -1,0 +1,1 @@
+python\\n# aioclock/__init__.py\\nfrom .app import AioClock\\n\\n__all__ = ['AioClock']\\n
