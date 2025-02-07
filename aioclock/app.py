@@ -1,1 +1,0 @@
-Based on the feedback provided, here's a revised version of the code snippet that addresses the `SyntaxError` and improves the overall structure and documentation. The revised code snippet includes class and method documentation, import statements, type annotations, and a clear example usage.
