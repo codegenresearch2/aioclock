@@ -1,0 +1,1 @@
+from aioclock import AioClock\\nimport asyncio\\n\\napp = AioClock()\\n\\n@app.task(trigger=Once())\\nasync def main():\\n    print("Hello World")\\n\\nif __name__ == "__main__":\\n    asyncio.run(app.serve())
