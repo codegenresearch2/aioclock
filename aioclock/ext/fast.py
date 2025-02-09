@@ -20,8 +20,6 @@ def make_fastapi_router(aioclock: AioClock, router: Union[APIRouter, None] = Non
         - Show to your client which task is going to be run next, and at which time.
         - Run a specific task from an HTTP API immediately if needed.
 
-    To use FastAPI Extension, please make sure you do `pip install aioclock[fastapi]`.
-
     Parameters:
         aioclock (AioClock): The AioClock instance to interact with.
         router (Union[APIRouter, None]): An optional FastAPI router to include the endpoints.
