@@ -12,13 +12,8 @@ def test_at_trigger():
 
     val = trigger._get_next_ts(
         datetime(
-            2024,
-            3,
-            31,
-            14,
-            1,
-            0,
-            tzinfo=zoneinfo.ZoneInfo('Europe/Istanbul'),
+            2024, 3, 31, 14, 1, 0,
+            tzinfo=zoneinfo.ZoneInfo('Europe/Istanbul')
         )
     )
     assert val == 60
@@ -28,13 +23,8 @@ def test_at_trigger():
 
     val = trigger._get_next_ts(
         datetime(
-            2024,
-            3,
-            31,
-            14,
-            0,
-            0,
-            tzinfo=zoneinfo.ZoneInfo('Europe/Istanbul'),
+            2024, 3, 31, 14, 0, 0,
+            tzinfo=zoneinfo.ZoneInfo('Europe/Istanbul')
         )
     )
     assert val == 59
@@ -43,13 +33,8 @@ def test_at_trigger():
     trigger = At(at='every day', hour=14, second=59, tz='Europe/Istanbul')
     val = trigger._get_next_ts(
         datetime(
-            2024,
-            3,
-            31,
-            14,
-            0,
-            0,
-            tzinfo=zoneinfo.ZoneInfo('Europe/Istanbul'),
+            2024, 3, 31, 14, 0, 0,
+            tzinfo=zoneinfo.ZoneInfo('Europe/Istanbul')
         )
     )
     assert val == 59
@@ -58,13 +43,8 @@ def test_at_trigger():
     trigger = At(at='every saturday', hour=14, second=0, tz='Europe/Istanbul')
     val = trigger._get_next_ts(
         datetime(
-            2024,
-            3,
-            31,
-            14,
-            0,
-            0,
-            tzinfo=zoneinfo.ZoneInfo('Europe/Istanbul'),
+            2024, 3, 31, 14, 0, 0,
+            tzinfo=zoneinfo.ZoneInfo('Europe/Istanbul')
         )
     )
     assert val == 518400
@@ -79,7 +59,7 @@ async def test_loop_controller():
     assert trigger.should_trigger() is False
 
     class IterateFiveTime(LoopController):
-        type_: str = 'foo'
+        type_ = 'foo'
 
         async def trigger_next(self) -> None:
             self._increment_loop_counter()
