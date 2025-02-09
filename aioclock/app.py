@@ -54,9 +54,9 @@ class AioClock:
         Initialize AioClock instance.
         :param limiter: Optional capacity limiter for managing task execution.
         """
-        self.limiter = limiter
         self._groups: list[Group] = []
         self._app_tasks: list[Task] = []
+        self._limiter = limiter
 
     _groups: list[Group]
     """List of groups that will be run by AioClock."""
