@@ -10,6 +10,7 @@ else:
 
 from fast_depends import inject
 from asyncer import asyncify
+import anyio
 
 from aioclock.provider import get_provider
 from aioclock.task import Task
@@ -20,41 +21,14 @@ P = ParamSpec("P")
 
 
 class Group:
-    def __init__(self, *, tasks: Union[list[Task], None] = None, limiter=None):
+    def __init__(self):
         """
         Group of tasks that will be run together.
-
-        Best use case is to have a good modularity and separation of concerns.
-        For example, you can have a group of tasks that are responsible for sending emails.
-        And another group of tasks that are responsible for sending notifications.
-
-        Example:
-            \"\"\"python
-            from aioclock import Group, Forever
-
-            email_group = Group()
-
-            @email_group.task(trigger=Forever())
-            async def send_email():
-                ...
-            \"\"\"
-
         """
-        self._tasks: list[Task] = tasks or []
-        self._limiter = limiter
+        self._tasks = []
 
     def task(self, *, trigger: BaseTrigger):
-        """Function used to decorate tasks, to be registered inside AioClock.
-
-        Example:
-            \"\"\"python
-            from aioclock import Group, Forever
-
-            @group.task(trigger=Forever())
-            async def send_email():
-                ...
-            \"\"\"
-        """
+        """Function used to decorate tasks, to be registered inside AioClock."""
 
         def decorator(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
             @wraps(func)
