@@ -48,7 +48,7 @@ class AioClock:
         """
         Initialize AioClock instance.
         Parameters:
-            limiter: Optional[Any]: A limiter to limit the number of tasks.
+            limiter: Optional[anyio.CapacityLimiter]: A limiter to limit the number of tasks.
         """
         self._groups: list[Group] = []
         self._app_tasks: list[Task] = []
