@@ -79,7 +79,7 @@ async def test_loop_controller():
     assert trigger.should_trigger() is False
 
     class IterateFiveTime(LoopController):
-        type_ = 'foo'
+        type_: str = 'foo'
 
         async def trigger_next(self) -> None:
             self._increment_loop_counter()
