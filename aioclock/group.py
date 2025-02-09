@@ -67,8 +67,9 @@ class Group:
 
     async def _run(self):
         """
-        Just for purpose of being able to run all task in group
-        Private method, should not be used outside of the library
+        Runs all tasks in the group.
+
+        This method is intended for internal use and should not be called directly outside the library.
         """
         if self._limiter:
             async with anyio.create_task_group() as task_group:
