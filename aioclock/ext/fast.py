@@ -33,6 +33,9 @@ def make_fastapi_router(aioclock: AioClock, router: Union[APIRouter, None] = Non
         aioclock (AioClock): The AioClock instance to manage tasks for.
         router (Union[APIRouter, None]): An optional FastAPI router to include the endpoints in.
 
+    Returns:
+        APIRouter: The FastAPI router with the tasks endpoints.
+
     Example:
         
         import asyncio
