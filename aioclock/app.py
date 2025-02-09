@@ -19,6 +19,7 @@ from aioclock.utils import flatten_chain
 T = TypeVar("T")
 P = ParamSpec("P")
 
+
 class AioClock:
     """
     AioClock is the main class that will be used to run the tasks.
@@ -48,11 +49,12 @@ class AioClock:
         \"\"\"
     """
 
-    def __init__(self):
+    def __init__(self, capacity_limiter: int = None):
         """
         Initialize AioClock instance.
-        No parameters are needed.
+        :param capacity_limiter: Optional capacity limiter for managing task execution.
         """
+        self.capacity_limiter = capacity_limiter
         self._groups: list[Group] = []
         self._app_tasks: list[Task] = []
 
@@ -67,10 +69,9 @@ class AioClock:
         """Dependencies provider that will be used to inject dependencies in tasks."""
         return get_provider()
 
-    def override_dependencies(
-        self, original: Callable[..., Any],
-        override: Callable[..., Any],
-    ) -> None:
+    def override_dependencies(self,
+                              original: Callable[..., Any],
+                              override: Callable[..., Any]):
         """Override a dependency with a new one.
 
         Example:
@@ -130,12 +131,20 @@ class AioClock:
             async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
                 return await func(*args, **kwargs)
 
-            self._app_tasks.append(
-                Task(
-                    func=inject(wrapper, dependency_overrides_provider=get_provider()),
-                    trigger=trigger,
+            if asyncio.iscoroutinefunction(func):
+                self._app_tasks.append(
+                    Task(
+                        func=inject(wrapper, dependency_overrides_provider=get_provider()),
+                        trigger=trigger,
+                    )
                 )
-            )
+            else:
+                self._app_tasks.append(
+                    Task(
+                        func=inject(asyncify(wrapper), dependency_overrides_provider=get_provider()),
+                        trigger=trigger,
+                    )
+                )
             return wrapper
 
         return decorator
@@ -167,15 +176,19 @@ class AioClock:
         First, run the startup tasks, then run the tasks, and finally run the shutdown tasks.
         """
 
-        self.include_group(Group(tasks=self._app_tasks))
-        try:
-            await asyncio.gather(
-                *(task.run() for task in self._get_startup_task()), return_exceptions=False
-            )
+        startup_group = Group()
+        startup_group.add_tasks(self._get_startup_task())
+        self.include_group(startup_group)
 
-            await asyncio.gather(
-                *(group.run() for group in self._get_tasks()), return_exceptions=False
-            )
-        finally:
-            shutdown_tasks = self._get_shutdown_task()
-            await asyncio.gather(*(task.run() for task in shutdown_tasks), return_exceptions=False)
+        normal_group = Group()
+        normal_group.add_tasks(self._get_tasks())
+        self.include_group(normal_group)
+
+        shutdown_group = Group()
+        shutdown_group.add_tasks(self._get_shutdown_task())
+        self.include_group(shutdown_group)
+
+        await asyncio.gather(
+            *(group.run() for group in [startup_group, normal_group, shutdown_group]),
+            return_exceptions=False,
+        )
