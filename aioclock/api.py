@@ -4,10 +4,7 @@ This module could be very useful if you intend to use aioclock in a web applicat
 
 Other tools and extension are written from this tool.
 
-!!! danger "Note when writing to aioclock API and changing its state."\n    Right now the state of AioClock instance is on the memory level, so if you write an API and change a task's trigger time, it will not persist.
-    In future we might store the state of AioClock instance in a database, so that it always remains same.
-    But this is a bit tricky and implicit because then your code gets ignored and database is preferred over the database.
-    For now you may consider it as a way to change something without redeploying the application, but it is not very recommended to write."
+!!! danger "Note when writing to aioclock API and changing its state."\n    Right now the state of AioClock instance is on the memory level, so if you write an API and change a task's trigger time, it will not persist.\n    In future we might store the state of AioClock instance in a database, so that it always remains same.\n    But this is a bit tricky and implicit because then your code gets ignored and database is preferred over the database.\n    For now you may consider it as a way to change something without redeploying the application, but it is not very recommended to write."
 """
 
 import sys
@@ -44,7 +41,10 @@ async def run_specific_task(task_id: UUID, app: AioClock) -> Any:
         task_id (UUID): The ID of the task to run.
         app (AioClock): The AioClock instance to run the task on.
 
-    Example:
+    Returns:
+        Any: The result of the task execution.
+
+    Examples:
         \"\"\"python
         from aioclock import AioClock, Once
         from aioclock.api import run_specific_task
@@ -52,7 +52,8 @@ async def run_specific_task(task_id: UUID, app: AioClock) -> Any:
         app = AioClock()
 
         @app.task(trigger=Once())
-        async def main(): ...
+        async def main():
+            print("Hello World")
 
         async def some_other_func():
             await run_specific_task(app._tasks[0].id, app)
@@ -69,7 +70,10 @@ async def run_with_injected_deps(func: Callable[P, Awaitable[T]]) -> T:
     Parameters:
         func (Callable[P, Awaitable[T]]): The function to run.
 
-    Example:
+    Returns:
+        T: The result of the function execution.
+
+    Examples:
         \"\"\"python
         from aioclock import Once, AioClock, Depends
         from aioclock.api import run_with_injected_deps
@@ -97,17 +101,21 @@ async def get_metadata_of_all_tasks(app: AioClock) -> list[TaskMetadata]:
     Parameters:
         app (AioClock): The AioClock instance to get tasks from.
 
+    Returns:
+        list[TaskMetadata]: A list of TaskMetadata objects.
+
     Note:
         Users should be aware that modifying the returned TaskMetadata objects may have unintended consequences.
 
-    Example:
+    Examples:
         \"\"\"python
         from aioclock import AioClock, Once
         from aioclock.api import get_metadata_of_all_tasks
 
         app = AioClock()
         @app.task(trigger=Once())
-        async def main(): ...
+        async def main():
+            pass
 
         async def some_other_func():
             metadata = await get_metadata_of_all_tasks(app)
