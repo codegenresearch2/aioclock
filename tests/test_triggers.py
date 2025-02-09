@@ -16,7 +16,7 @@ def test_at_trigger():
             3,
             31,
             14,
-            00,
+            1,
             0,
             tzinfo=zoneinfo.ZoneInfo('Europe/Istanbul'),
         )
@@ -79,7 +79,7 @@ async def test_loop_controller():
     assert trigger.should_trigger() is False
 
     class IterateFiveTime(LoopController):
-        type_: str = 'foo'
+        type_ = 'foo'
 
         async def trigger_next(self) -> None:
             self._increment_loop_counter()
