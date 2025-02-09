@@ -1,7 +1,7 @@
 import asyncio
 import sys
 from functools import wraps
-from typing import Any, Awaitable, Callable, TypeVar, Union
+from typing import Any, Awaitable, Callable, TypeVar, Union, Optional
 
 if sys.version_info < (3, 10):
     from typing_extensions import ParamSpec
@@ -9,12 +9,12 @@ else:
     from typing import ParamSpec
 
 from fast_depends import inject
-
 from aioclock.custom_types import Triggers
 from aioclock.group import Group, Task
 from aioclock.provider import get_provider
 from aioclock.triggers import BaseTrigger
 from aioclock.utils import flatten_chain
+import anyio
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -49,7 +49,7 @@ class AioClock:
         \"\"\"
     """
 
-    def __init__(self, capacity_limiter: int = None):
+    def __init__(self, capacity_limiter: Optional[anyio.CapacityLimiter] = None):
         """
         Initialize AioClock instance.
         :param capacity_limiter: Optional capacity limiter for managing task execution.
@@ -141,7 +141,7 @@ class AioClock:
             else:
                 self._app_tasks.append(
                     Task(
-                        func=inject(asyncify(wrapper), dependency_overrides_provider=get_provider()),
+                        func=inject(anyio.asyncify(wrapper), dependency_overrides_provider=get_provider()),
                         trigger=trigger,
                     )
                 )
@@ -188,7 +188,15 @@ class AioClock:
         shutdown_group.add_tasks(self._get_shutdown_task())
         self.include_group(shutdown_group)
 
-        await asyncio.gather(
-            *(group.run() for group in [startup_group, normal_group, shutdown_group]),
-            return_exceptions=False,
-        )
+        try:
+            await asyncio.gather(
+                *(group.run() for group in [startup_group, normal_group, shutdown_group]),
+                return_exceptions=False,
+            )
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            await asyncio.gather(
+                *(group.run() for group in [shutdown_group]),
+                return_exceptions=False,
+            )
+            raise
