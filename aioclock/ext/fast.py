@@ -1,38 +1,36 @@
 import asyncio
-        from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager
 
-        from fastapi import FastAPI
+from fastapi import FastAPI
 
-        from aioclock import AioClock
-        from aioclock.ext.fast import make_fastapi_router
-        from aioclock.triggers import Every, OnStartUp
+from aioclock import AioClock, TaskMetadata, get_metadata_of_all_tasks, run_specific_task
+from aioclock.ext.fast import make_fastapi_router
+from aioclock.triggers import Every, OnStartUp
 
-        clock_app = AioClock()
+clock_app = AioClock()
 
-        @clock_app.task(trigger=OnStartUp())
-        async def startup():
-            print("Starting...")
+@clock_app.task(trigger=OnStartUp())
+async def startup():
+    print('Starting...')
 
-        @clock_app.task(trigger=Every(seconds=3600))
-        async def foo():
-            print("Foo is processing...")
+@clock_app.task(trigger=Every(seconds=3600))
+async def foo():
+    print('Foo is processing...')
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    task = asyncio.create_task(clock_app.serve())
+    yield
 
-        @asynccontextmanager
-        async def lifespan(app: FastAPI):
-            task = asyncio.create_task(clock_app.serve())
-            yield
+    try:
+        task.cancel()
+        await task
+    except asyncio.CancelledError:
+        ...
 
-            try:
-                task.cancel()
-                await task
-            except asyncio.CancelledError:
-                ...
+app = FastAPI(lifespan=lifespan)
+app.include_router(make_fastapi_router(clock_app))
 
-
-        app = FastAPI(lifespan=lifespan)
-        app.include_router(make_fastapi_router(clock_app))
-
-        if __name__ == "__main__":
-            import uvicorn
-            # uvicorn.run(app)
+if __name__ == '__main__':
+    import uvicorn
+    # uvicorn.run(app)
