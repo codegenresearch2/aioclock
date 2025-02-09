@@ -15,8 +15,8 @@ if sys.version_info < (3, 10):
 else:
     from typing import ParamSpec
 
-T = TypeVar("T")
-P = ParamSpec("P")
+T = TypeVar('T')
+P = ParamSpec('P')
 
 
 class TaskMetadata(BaseModel):
