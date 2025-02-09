@@ -9,8 +9,7 @@ else:
     from typing import ParamSpec
 
 from fast_depends import inject
-from anyio import create_task_group
-from asyncer import asyncify
+from anyio import create_task_group, run_sync_in_worker_thread
 
 from aioclock.custom_types import Triggers
 from aioclock.group import Group, Task
