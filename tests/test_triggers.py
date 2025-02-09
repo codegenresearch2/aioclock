@@ -79,7 +79,7 @@ async def test_loop_controller():
         type_: str = "foo"
 
         async def trigger_next(self) -> None:
-            self._increment_loop_count()
+            self._increment_loop_counter()
             return None
 
     trigger = IterateFiveTime(max_loop_count=5)
