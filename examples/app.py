@@ -1,6 +1,6 @@
 import asyncio
-
-from aioclock import AioClock, Depends, Every, Group, OnShutDown, OnStartUp
+import threading
+from aioclock import AioClock, Depends, Every, Group
 
 # service1.py
 group = Group()
@@ -10,9 +10,9 @@ def dependency():
     return "Hello, world!"
 
 
-@group.task(trigger=Every(seconds=1))
-async def my_task(val: str = Depends(dependency)):
-    print(val)
+@group.task(trigger=Every(seconds=2))
+def my_task(val: str = Depends(dependency)):
+    print(f"Task is running on thread {threading.current_thread().ident}. {val}")
 
 
 # app.py
@@ -21,13 +21,13 @@ app.include_group(group)
 
 
 @app.task(trigger=OnStartUp())
-async def startup(val: str = Depends(dependency)):
-    print(f"Welcome! {val}")
+def startup():
+    print("Welcome!")
 
 
 @app.task(trigger=OnShutDown())
-async def shutdown(val: str = Depends(dependency)):
-    print(f"Bye! {val}")
+def shutdown():
+    print("Bye!")
 
 
 if __name__ == "__main__":
