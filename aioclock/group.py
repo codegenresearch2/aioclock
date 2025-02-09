@@ -47,7 +47,7 @@ class Group:
 
         def decorator(func: Callable[P, Union[Awaitable[T], T]]) -> Callable[P, Union[Awaitable[T], T]]:
             @wraps(func)
-            async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+            async def wrapped_function(*args: P.args, **kwargs: P.kwargs) -> T:
                 if asyncio.iscoroutinefunction(func):
                     result = await func(*args, **kwargs)
                 else:
@@ -55,11 +55,11 @@ class Group:
                 return result
 
             task = Task(
-                func=inject(wrapper, dependency_overrides_provider=get_provider()),
+                func=inject(wrapped_function, dependency_overrides_provider=get_provider()),
                 trigger=trigger,
             )
             self._tasks.append(task)
-            return wrapper
+            return wrapped_function
 
         return decorator
 
