@@ -10,7 +10,7 @@ group = Group()
 
 
 def dependency() -> str:
-    return f'Hello, world! (Thread ID: {threading.current_thread().ident}')  # Updated dependency function to include thread ID
+    return 'Hello, world!'  # Simplified dependency function
 
 @group.task(trigger=Every(seconds=2))
 async def my_task(val: Annotated[str, Depends(dependency)]) -> None:
