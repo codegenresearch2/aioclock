@@ -20,7 +20,7 @@ P = ParamSpec("P")
 
 
 class Group:
-    def __init__(self, *, tasks: Optional[list[Task]] = None, limiter: Optional[any] = None):
+    def __init__(self, *, tasks: Optional[list[Task]] = None, limiter: Optional[anyio.CapacityLimiter] = None):
         """
         Group of tasks that will be run together.
 
@@ -30,7 +30,7 @@ class Group:
 
         Args:
             tasks (Optional[list[Task]]): List of tasks to include in the group.
-            limiter (Optional[any]): Optional limiter to limit the number of concurrent tasks.
+            limiter (Optional[anyio.CapacityLimiter]): Optional limiter to limit the number of concurrent tasks.
         """
         self._tasks: list[Task] = tasks or []
         self._limiter = limiter
