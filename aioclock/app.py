@@ -42,12 +42,16 @@ class AioClock:
         
     """
 
-    def __init__(self):
+    def __init__(self, limiter=None):
         """
         Initialize AioClock instance.
+
+        Args:
+            limiter (anyio.CapacityLimiter, optional): A capacity limiter to limit the number of concurrent tasks.
         """
         self._groups: list[Group] = []
         self._app_tasks: list[Task] = []
+        self._limiter = limiter
 
     _groups: list[Group]
     """List of groups that will be run by AioClock."""
