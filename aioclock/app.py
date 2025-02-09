@@ -1,7 +1,7 @@
 import asyncio
 import sys
 from functools import wraps
-from typing import Any, Awaitable, Callable, TypeVar, Union, Optional
+from typing import Any, Awaitable, Callable, TypeVar, Union
 
 if sys.version_info < (3, 10):
     from typing_extensions import ParamSpec
@@ -10,7 +10,6 @@ else:
 
 from fast_depends import inject
 from asyncer import asyncify
-import anyio
 
 from aioclock.custom_types import Triggers
 from aioclock.group import Group, Task
@@ -28,6 +27,7 @@ class AioClock:
     It will be responsible for running the tasks in the right order.
 
     Examples:
+        Initialize the AioClock instance and add tasks:
         
         from aioclock import AioClock, Once
         import asyncio
@@ -42,16 +42,12 @@ class AioClock:
         
     """
 
-    def __init__(self, limiter: Optional[anyio.CapacityLimiter] = None):
+    def __init__(self):
         """
         Initialize AioClock instance.
-
-        Args:
-            limiter (Optional[anyio.CapacityLimiter], optional): A capacity limiter to limit the number of concurrent tasks. Defaults to None.
         """
         self._groups: list[Group] = []
         self._app_tasks: list[Task] = []
-        self._limiter = limiter
 
     _groups: list[Group]
     """List of groups that will be run by AioClock."""
@@ -61,7 +57,9 @@ class AioClock:
 
     @property
     def dependencies(self):
-        """Dependencies provider that will be used to inject dependencies in tasks."""
+        """
+        Returns the dependencies provider for injecting dependencies in tasks.
+        """
         return get_provider()
 
     def override_dependencies(
@@ -106,7 +104,7 @@ class AioClock:
                     return func(*args, **kwargs)
 
             task_instance = Task(
-                func=inject(asyncify(wrapper, limiter=self._limiter), dependency_overrides_provider=get_provider()),
+                func=inject(asyncify(wrapper), dependency_overrides_provider=self.dependencies),
                 trigger=trigger,
             )
             self._app_tasks.append(task_instance)
