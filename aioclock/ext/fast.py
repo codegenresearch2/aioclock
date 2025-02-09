@@ -24,10 +24,13 @@ except ImportError:
         "You need to install fastapi to use aioclock with FastAPI. Please run `pip install aioclock[fastapi]`"
     )
 
-
 def make_fastapi_router(aioclock: AioClock, router: Union[APIRouter, None] = None):
     """Make a FastAPI router that exposes the tasks of the AioClock instance and its external python API in HTTP Layer.
     You can pass a router to this function, and have dependencies injected in the router, or any authorization logic that you want to have.
+
+    Parameters:
+        aioclock (AioClock): The AioClock instance to interact with.
+        router (Union[APIRouter, None]): An optional FastAPI router to include the endpoints.
 
     Example:
 """
