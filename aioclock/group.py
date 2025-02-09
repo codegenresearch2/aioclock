@@ -27,7 +27,7 @@ class Group:
 
         :param limiter: Optional[anyio.CapacityLimiter] - A limiter to enforce task execution limits.
         """
-        self._tasks: list[Task] = []
+        self._tasks = []
         self._limiter = limiter
 
     def task(self, *, trigger: BaseTrigger):
