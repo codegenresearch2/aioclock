@@ -1,7 +1,7 @@
 import asyncio
 import sys
 from functools import wraps
-from typing import Awaitable, Callable, TypeVar, Union
+from typing import Awaitable, Callable, Optional, TypeVar, Union
 
 if sys.version_info < (3, 10):
     from typing_extensions import ParamSpec
@@ -10,6 +10,7 @@ else:
 
 from fast_depends import inject
 from asyncer import asyncify
+import anyio
 
 from aioclock.provider import get_provider
 from aioclock.task import Task
@@ -20,7 +21,7 @@ P = ParamSpec("P")
 
 
 class Group:
-    def __init__(self, *, tasks: Union[list[Task], None] = None, limiter=None):
+    def __init__(self, *, tasks: Optional[list[Task]] = None, limiter: Optional[anyio.CapacityLimiter] = None):
         """
         Group of tasks that will be run together.
 
@@ -30,7 +31,7 @@ class Group:
 
         Args:
             tasks (list[Task], optional): List of tasks to initialize the group with.
-            limiter: Optional limiter object to limit the number of concurrent tasks.
+            limiter (Optional[anyio.CapacityLimiter]): Optional limiter object to limit the number of concurrent tasks.
         """
         self._tasks: list[Task] = tasks or []
         self._limiter = limiter
@@ -50,9 +51,9 @@ class Group:
 
         def decorator(func: Callable[P, Union[Awaitable[T], T]]) -> Callable[P, Union[Awaitable[T], T]]:
             @wraps(func)
-            def wrapper(*args: P.args, **kwargs: P.kwargs) -> Union[Awaitable[T], T]:
+            async def wrapper(*args: P.args, **kwargs: P.kwargs) -> Union[Awaitable[T], T]:
                 if asyncio.iscoroutinefunction(func):
-                    return func(*args, **kwargs)
+                    return await func(*args, **kwargs)
                 else:
                     return asyncify(func)(*args, **kwargs)
 
@@ -71,11 +72,9 @@ class Group:
         Private method, should not be used outside of the library
         """
         if self._limiter:
-            async with self._limiter:
-                await asyncio.gather(
-                    *(task.run() for task in self._tasks),
-                    return_exceptions=False,
-                )
+            async with anyio.create_task_group() as task_group:
+                for task in self._tasks:
+                    task_group.start_soon(task.run)
         else:
             await asyncio.gather(
                 *(task.run() for task in self._tasks),
