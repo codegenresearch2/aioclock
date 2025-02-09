@@ -1,7 +1,7 @@
 import asyncio
 import sys
 from functools import wraps
-from typing import Awaitable, Callable, TypeVar, Union
+from typing import Awaitable, Callable, TypeVar, Union, Optional
 
 if sys.version_info < (3, 10):
     from typing_extensions import ParamSpec
@@ -20,7 +20,7 @@ P = ParamSpec("P")
 
 
 class Group:
-    def __init__(self, *, limiter=None):
+    def __init__(self, *, limiter: Optional[anyio.CapacityLimiter] = None):
         """
         Group of tasks that will be run together.
 
@@ -31,7 +31,7 @@ class Group:
         :param limiter: Optional capacity limiter for the group tasks.
         :type limiter: Optional[anyio.CapacityLimiter]
         """
-        self._tasks = []
+        self._tasks: list[Task] = []
         self.limiter = limiter
 
     def task(self, *, trigger: BaseTrigger):
