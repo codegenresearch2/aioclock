@@ -10,6 +10,7 @@ else:
 
 from fast_depends import inject
 from asyncer import asyncify
+import anyio
 
 from aioclock.provider import get_provider
 from aioclock.task import Task
@@ -20,7 +21,7 @@ P = ParamSpec("P")
 
 
 class Group:
-    def __init__(self, *, tasks: Optional[list[Task]] = None, limiter: Optional[anyio.CapacityLimiter] = None):
+    def __init__(self, limiter: Optional[anyio.CapacityLimiter] = None):
         """
         Group of tasks that will be run together.
 
@@ -29,10 +30,9 @@ class Group:
         And another group of tasks that are responsible for sending notifications.
 
         Args:
-            tasks (Optional[list[Task]]): List of tasks to include in the group.
             limiter (Optional[anyio.CapacityLimiter]): Optional limiter to limit the number of concurrent tasks.
         """
-        self._tasks: list[Task] = tasks or []
+        self._tasks: list[Task] = []
         self._limiter = limiter
 
     def task(self, *, trigger: BaseTrigger):
