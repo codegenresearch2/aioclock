@@ -32,22 +32,14 @@ P = ParamSpec("P")
 
 
 class TaskMetadata(BaseModel):
-    """Metadata of the task that is included in the AioClock instance.
-
-    Attributes:
-        id: UUID: Task ID that is unique for each task, and changes every time you run the aioclock app.
-            In future we might store task ID in a database, so that it always remains same.
-        trigger: Union[TriggerT, Any]: Trigger that is used to run the task, type is also any to ease implementing new triggers.
-        task_name: str: Name of the task function.
-    """
+    """Metadata of the task that is included in the AioClock instance."
     id: UUID
     trigger: Union[TriggerT, Any]
     task_name: str
 
 
 async def run_specific_task(task_id: UUID, app: AioClock) -> Any:
-    """Run a specific task immediately by its ID, from the AioClock instance.
-
+    """Run a specific task immediately by its ID, from the AioClock instance."
     Parameters:
         task_id (UUID): The ID of the task to run.
         app (AioClock): The AioClock instance to run the task on.
@@ -73,8 +65,7 @@ async def run_specific_task(task_id: UUID, app: AioClock) -> Any:
 
 
 async def run_with_injected_deps(func: Callable[P, Awaitable[T]]) -> T:
-    """Runs an aioclock decorated function, with all the dependencies injected.
-
+    """Runs an aioclock decorated function, with all the dependencies injected."
     Parameters:
         func (Callable[P, Awaitable[T]]): The function to run.
 
@@ -102,8 +93,7 @@ async def run_with_injected_deps(func: Callable[P, Awaitable[T]]) -> T:
 
 
 async def get_metadata_of_all_tasks(app: AioClock) -> list[TaskMetadata]:
-    """Get metadata of all tasks that are included in the AioClock instance.
-
+    """Get metadata of all tasks that are included in the AioClock instance."
     Parameters:
         app (AioClock): The AioClock instance to get tasks from.
 
