@@ -27,7 +27,7 @@ class Group:
 
         :param limiter: Optional[anyio.CapacityLimiter] - A limiter to enforce task execution limits.
         """
-        self._tasks = []
+        self._tasks: list[Task] = []
         self._limiter = limiter
 
     def task(self, *, trigger: BaseTrigger):
@@ -39,7 +39,7 @@ class Group:
 
         def decorator(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
             @wraps(func)
-            async def wrapped_function(*args: P.args, **kwargs: P.kwargs) -> T:
+            async def wrapped_funciton(*args: P.args, **kwargs: P.kwargs) -> T:
                 if asyncio.iscoroutinefunction(func):
                     return await func(*args, **kwargs)
                 else:
@@ -47,11 +47,11 @@ class Group:
 
             self._tasks.append(
                 Task(
-                    func=inject(wrapped_function, dependency_overrides_provider=get_provider()),
+                    func=inject(wrapped_funciton, dependency_overrides_provider=get_provider()),
                     trigger=trigger,
                 )
             )
-            return wrapped_function
+            return wrapped_funciton
 
         return decorator
 
