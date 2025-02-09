@@ -1,7 +1,7 @@
 import asyncio
 import sys
 from functools import wraps
-from typing import Any, Awaitable, Callable, TypeVar, Union
+from typing import Any, Awaitable, Callable, TypeVar, Union, Optional
 
 if sys.version_info < (3, 10):
     from typing_extensions import ParamSpec
@@ -42,12 +42,12 @@ class AioClock:
         
     """
 
-    def __init__(self, limiter=None):
+    def __init__(self, limiter: Optional[anyio.CapacityLimiter] = None):
         """
         Initialize AioClock instance.
 
         Args:
-            limiter (anyio.CapacityLimiter, optional): A capacity limiter to limit the number of concurrent tasks.
+            limiter (Optional[anyio.CapacityLimiter], optional): A capacity limiter to limit the number of concurrent tasks. Defaults to None.
         """
         self._groups: list[Group] = []
         self._app_tasks: list[Task] = []
@@ -105,12 +105,11 @@ class AioClock:
                 else:
                     return func(*args, **kwargs)
 
-            self._app_tasks.append(
-                Task(
-                    func=inject(asyncify(wrapper), dependency_overrides_provider=get_provider()),
-                    trigger=trigger,
-                )
+            task_instance = Task(
+                func=inject(asyncify(wrapper, limiter=self._limiter), dependency_overrides_provider=get_provider()),
+                trigger=trigger,
             )
+            self._app_tasks.append(task_instance)
             return wrapper
 
         return decorator
