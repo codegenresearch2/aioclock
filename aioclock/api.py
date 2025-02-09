@@ -75,7 +75,7 @@ async def run_specific_task(task_id: UUID, app: AioClock) -> T:
         
     """
     task = next((task for task in app._tasks if task.id == task_id), None)
-    if not task:
+    if task is None:
         raise TaskIdNotFound
     return await run_with_injected_deps(task.func)
 
