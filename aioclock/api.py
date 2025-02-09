@@ -43,23 +43,16 @@ class TaskMetadata(BaseModel):
     """
 
     id: UUID
-
     trigger: Union[TriggerT, Any]
-
     task_name: str
 
 
 async def run_specific_task(task_id: UUID, app: AioClock):
     """Run a specific task immediately by its ID, from the AioClock instance.
 
-    params:
-        task_id: Task ID that is unique for each task, and changes every time you run the aioclock app.
-            In future we might store task ID in a database, so that it always remains same.
-        app: AioClock instance to run the task from.
-
     Example:
-        ```python
-        from aioclock import  AioClock, Once
+        
+        from aioclock import AioClock, Once
         from aioclock.api import run_specific_task
 
         app = AioClock()
@@ -70,7 +63,7 @@ async def run_specific_task(task_id: UUID, app: AioClock):
 
         async def some_other_func():
             await run_specific_task(app._tasks[0].id, app)
-        ```
+        
 
     """
     task = next((task for task in app._tasks if task.id == task_id), None)
@@ -82,13 +75,8 @@ async def run_specific_task(task_id: UUID, app: AioClock):
 async def run_with_injected_deps(func: Callable[P, Awaitable[T]]) -> T:
     """Runs an aioclock decorated function, with all the dependencies injected.
 
-    Can be used to run a task function with all the dependencies injected.
-
-    params:
-        func: Function to run with all the dependencies injected. Must be decorated with `@app.task` decorator.
-
     Example:
-        ```python
+        
         from aioclock import Once, AioClock, Depends
         from aioclock.api import run_with_injected_deps
 
@@ -105,7 +93,7 @@ async def run_with_injected_deps(func: Callable[P, Awaitable[T]]) -> T:
         async def some_other_func():
             foo = await run_with_injected_deps(main)
             assert foo == 1
-        ```
+        
 
     """
     return await inject(func, dependency_overrides_provider=get_provider())()  # type: ignore
@@ -114,15 +102,8 @@ async def run_with_injected_deps(func: Callable[P, Awaitable[T]]) -> T:
 async def get_metadata_of_all_tasks(app: AioClock) -> list[TaskMetadata]:
     """Get metadata of all tasks that are included in the AioClock instance.
 
-    This function can be used to mutate the `TaskMetadata` object, i.e to change the trigger of a task.
-    But for now it is yet not recommended to do this, as you might experience some unexpected behavior.
-    But in next versions, I'd like to make it more stable and reliable on mutating the data.
-
-    params:
-        app: AioClock instance to get the metadata of all tasks.
-
     Example:
-        ```python
+        
         from aioclock import AioClock, Once
         from aioclock.api import get_metadata_of_all_tasks
 
@@ -132,7 +113,7 @@ async def get_metadata_of_all_tasks(app: AioClock) -> list[TaskMetadata]:
 
         async def some_other_func():
             metadata = await get_metadata_of_all_tasks(app)
-        ```
+        
     """
     return [
         TaskMetadata(
