@@ -49,12 +49,12 @@ class AioClock:
         \"\"\"
     """
 
-    def __init__(self, capacity_limiter: Optional[anyio.CapacityLimiter] = None):
+    def __init__(self, limiter: Optional[anyio.CapacityLimiter] = None):
         """
         Initialize AioClock instance.
-        :param capacity_limiter: Optional capacity limiter for managing task execution.
+        :param limiter: Optional capacity limiter for managing task execution.
         """
-        self.capacity_limiter = capacity_limiter
+        self.limiter = limiter
         self._groups: list[Group] = []
         self._app_tasks: list[Task] = []
 
@@ -69,9 +69,7 @@ class AioClock:
         """Dependencies provider that will be used to inject dependencies in tasks."""
         return get_provider()
 
-    def override_dependencies(self,
-                              original: Callable[..., Any],
-                              override: Callable[..., Any]):
+    def override_dependencies(self, original: Callable[..., Any], override: Callable[..., Any]):
         """Override a dependency with a new one.
 
         Example:
