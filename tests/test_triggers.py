@@ -3,7 +3,7 @@ from datetime import datetime
 import pytest
 import zoneinfo
 
-from aioclock.triggers import At, Every, Forever, LoopController, Once
+from aioclock.triggers import At, Every, Forever, LoopController, Once, Cron
 
 
 def test_at_trigger():
@@ -12,12 +12,12 @@ def test_at_trigger():
 
     val = trigger._get_next_ts(
         datetime(
-            year=2024,
-            month=3,
-            day=31,
-            hour=14,
-            minute=00,
-            second=0,
+            2024,
+            3,
+            31,
+            14,
+            00,
+            0,
             tzinfo=zoneinfo.ZoneInfo('Europe/Istanbul'),
         )
     )
@@ -28,12 +28,12 @@ def test_at_trigger():
 
     val = trigger._get_next_ts(
         datetime(
-            year=2024,
-            month=3,
-            day=31,
-            hour=14,
-            minute=0,
-            second=0,
+            2024,
+            3,
+            31,
+            14,
+            0,
+            0,
             tzinfo=zoneinfo.ZoneInfo('Europe/Istanbul'),
         )
     )
@@ -43,12 +43,12 @@ def test_at_trigger():
     trigger = At(at='every day', hour=14, second=59, tz='Europe/Istanbul')
     val = trigger._get_next_ts(
         datetime(
-            year=2024,
-            month=3,
-            day=31,
-            hour=14,
-            minute=0,
-            second=0,
+            2024,
+            3,
+            31,
+            14,
+            0,
+            0,
             tzinfo=zoneinfo.ZoneInfo('Europe/Istanbul'),
         )
     )
@@ -58,12 +58,12 @@ def test_at_trigger():
     trigger = At(at='every saturday', hour=14, second=0, tz='Europe/Istanbul')
     val = trigger._get_next_ts(
         datetime(
-            year=2024,
-            month=3,
-            day=31,
-            hour=14,
-            minute=0,
-            second=0,
+            2024,
+            3,
+            31,
+            14,
+            0,
+            0,
             tzinfo=zoneinfo.ZoneInfo('Europe/Istanbul'),
         )
     )
@@ -79,7 +79,7 @@ async def test_loop_controller():
     assert trigger.should_trigger() is False
 
     class IterateFiveTime(LoopController):
-        type_ = 'foo'
+        type_: str = 'foo'
 
         async def trigger_next(self) -> None:
             self._increment_loop_counter()
@@ -114,3 +114,11 @@ async def test_every():
     assert await trigger.get_waiting_time_till_next_trigger() == 0
     trigger._increment_loop_counter()
     assert await trigger.get_waiting_time_till_next_trigger() == 1
+
+
+@pytest.mark.asyncio
+async def test_cron_trigger():
+    # Add a test for the Cron trigger to ensure comprehensive coverage.
+    trigger = Cron(cron='0 12 * * *', tz='Asia/Kolkata')
+    assert trigger.get_waiting_time_till_next_trigger() > 0
+    await trigger.trigger_next()
