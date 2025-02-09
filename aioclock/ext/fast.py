@@ -32,8 +32,45 @@ def make_fastapi_router(aioclock: AioClock, router: Union[APIRouter, None] = Non
         aioclock (AioClock): The AioClock instance to interact with.
         router (Union[APIRouter, None]): An optional FastAPI router to include the endpoints.
 
-    Example:
-"""
+    Examples:
+        Example 1:
+            import asyncio
+            from contextlib import asynccontextmanager
+
+            from fastapi import FastAPI
+
+            from aioclock import AioClock
+            from aioclock.ext.fast import make_fastapi_router
+            from aioclock.triggers import Every, OnStartUp
+
+            clock_app = AioClock()
+
+            @clock_app.task(trigger=OnStartUp())
+            async def startup():
+                print("Starting...")
+
+            @clock_app.task(trigger=Every(seconds=3600))
+            async def foo():
+                print("Foo is processing...")
+
+            @asynccontextmanager
+            async def lifespan(app: FastAPI):
+                task = asyncio.create_task(clock_app.serve())
+                yield
+
+                try:
+                    task.cancel()
+                    await task
+                except asyncio.CancelledError:
+                    ...
+
+            app = FastAPI(lifespan=lifespan)
+            app.include_router(make_fastapi_router(clock_app))
+
+            if __name__ == "__main__":
+                import uvicorn
+                # uvicorn.run(app)
+    """
     router = router or APIRouter()
 
     @router.get("/tasks")
