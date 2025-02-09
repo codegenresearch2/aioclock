@@ -15,9 +15,12 @@ def sync_task_1(val: str = Depends(dependency)) -> None:
     print(f"Sync task 1 is running. {val}")
 
 
-@group.task(trigger=Every(seconds=3))
-def sync_task_2(val: str = Depends(dependency)) -> None:
+@group.task(trigger=Every(seconds=2))
+def sync_task_2(val: str = Depends(dependency)) -> str:
     print(f"Sync task 2 is running. {val}")
+    # Simulate a blocking operation
+    import time
+    time.sleep(1)
     return "Sync task 2 completed"
 
 
