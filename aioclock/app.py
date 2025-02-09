@@ -42,22 +42,26 @@ class AioClock:
         \"\"\"python
         asyncio.run(app.serve())
         \"\"\"
-
     """
 
-    def __init__(self):
+    def __init__(self, limiter=None):
         """
         Initialize AioClock instance.
-        No parameters are needed.
+        Parameters:
+            limiter: Optional[Any]: A limiter to limit the number of tasks.
         """
         self._groups: list[Group] = []
         self._app_tasks: list[Task] = []
+        self._limiter = limiter
 
     _groups: list[Group]
     """List of groups that will be run by AioClock."
 
     _app_tasks: list[Task]
     """List of tasks that will be run by AioClock."
+
+    _limiter: Any
+    """A limiter to limit the number of tasks."
 
     @property
     def dependencies(self):
