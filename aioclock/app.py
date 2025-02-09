@@ -67,7 +67,8 @@ class AioClock:
     def override_dependencies(
         self, original: Callable[..., Any], override: Callable[..., Any]
     ) -> None:
-        """Override a dependency with a new one.
+        """
+        Override a dependency with a new one.
 
         Args:
             original (Callable[..., Any]): The original dependency function.
@@ -76,7 +77,8 @@ class AioClock:
         self.dependencies.override(original, override)
 
     def include_group(self, group: Group) -> None:
-        """Include a group of tasks that will be run by AioClock.
+        """
+        Include a group of tasks that will be run by AioClock.
 
         Args:
             group (Group): The group of tasks to include.
@@ -85,7 +87,8 @@ class AioClock:
         return None
 
     def task(self, *, trigger: BaseTrigger):
-        """Decorator to add a task to the AioClock instance.
+        """
+        Decorator to add a task to the AioClock instance.
 
         Args:
             trigger (BaseTrigger): The trigger that defines when the task should run.
