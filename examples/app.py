@@ -20,12 +20,12 @@ app = AioClock()
 app.include_group(group)
 
 @app.task(trigger=OnStartUp())
-def startup():
+def sync_task_1():
     print(f'Startup Task (Thread ID: {threading.current_thread().ident})')
     time.sleep(1)  # Simulate blocking operation
 
 @app.task(trigger=OnShutDown())
-def shutdown():
+def sync_task_2():
     print(f'Shutdown Task (Thread ID: {threading.current_thread().ident})')
     time.sleep(1)  # Simulate blocking operation
 
