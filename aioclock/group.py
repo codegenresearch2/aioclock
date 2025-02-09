@@ -21,7 +21,7 @@ P = ParamSpec("P")
 
 
 class Group:
-    def __init__(self, limiter=None):
+    def __init__(self, *, limiter=None):
         """
         Group of tasks that will be run together.
 
