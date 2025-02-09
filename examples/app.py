@@ -1,5 +1,8 @@
 import asyncio
+import threading
+from time import sleep
 from aioclock import AioClock, Depends, Every, Group, OnShutDown, OnStartUp
+from typing import Annotated
 
 # service1.py
 group = Group()
@@ -17,9 +20,7 @@ def sync_task_1(val: str = Depends(dependency)) -> None:
 @group.task(trigger=Every(seconds=2.01))
 def sync_task_2(val: str = Depends(dependency)) -> str:
     print(f"Sync task 2 (Thread {threading.get_ident()}) is running. {val}")
-    # Simulate a blocking operation
-    import time
-    time.sleep(1)
+    sleep(1)
     return "Sync task 2 completed"
 
 
