@@ -20,7 +20,7 @@ P = ParamSpec("P")
 
 
 class Group:
-    def __init__(self, *, tasks: Union[list[Task], None] = None, limiter=None):
+    def __init__(self, *, limiter=None):
         """
         Group of tasks that will be run together.
 
@@ -28,39 +28,25 @@ class Group:
         For example, you can have a group of tasks that are responsible for sending emails.
         And another group of tasks that are responsible for sending notifications.
 
-        Example:
-            \"\"\"python
-
-            from aioclock import Group, AioClock, Forever
-
-            email_group = Group()
-
-            # consider this as different file
-            @email_group.task(trigger=Forever())
-            async def send_email():
-                ...
-
-            # app.py
-            aio_clock = AioClock()
-            aio_clock.include_group(email_group)
-            \"\"\"""
-        self._tasks: list[Task] = tasks or []
+        :param limiter: Optional capacity limiter for the group tasks.
+        :type limiter: Optional[anyio.CapacityLimiter]
+        """
+        self._tasks = []
         self.limiter = limiter
 
     def task(self, *, trigger: BaseTrigger):
-        """Function used to decorate tasks, to be registered inside AioClock.
+        """
+        Function used to decorate tasks, to be registered inside AioClock.
 
-        Example:
-            \"\"\"python
-            from aioclock import Group, Forever
-            @group.task(trigger=Forever())
-            async def send_email():
-                ...
-            \"\"\"""
+        :param trigger: The trigger that determines when the task should run.
+        :type trigger: BaseTrigger
+        :return: The decorated function.
+        :rtype: Callable[P, Awaitable[T]]
+        """
 
         def decorator(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
             @wraps(func)
-            async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+            async def wrapped_function(*args: P.args, **kwargs: P.kwargs) -> T:
                 if asyncify(func) is not func:
                     return await func(*args, **kwargs)
                 else:
@@ -68,11 +54,11 @@ class Group:
 
             self._tasks.append(
                 Task(
-                    func=inject(wrapper, dependency_overrides_provider=get_provider()),
+                    func=inject(wrapped_function, dependency_overrides_provider=get_provider()),
                     trigger=trigger,
                 )
             )
-            return wrapper
+            return wrapped_function
 
         return decorator
 
