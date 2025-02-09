@@ -171,11 +171,13 @@ class AioClock:
         self.include_group(Group(tasks=self._app_tasks))
         try:
             await asyncio.gather(
-                *(task.run() for task in self._get_startup_task()), return_exceptions=False
+                *(task.run() for task in self._get_startup_task()),
+                return_exceptions=False
             )
 
             await asyncio.gather(
-                *(group.run() for group in self._get_tasks()), return_exceptions=False
+                *(group.run() for group in self._get_tasks()),
+                return_exceptions=False
             )
         finally:
             shutdown_tasks = self._get_shutdown_task()
