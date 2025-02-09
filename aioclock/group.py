@@ -65,8 +65,9 @@ class Group:
 
     async def _run(self):
         """
-        Just for purpose of being able to run all task in group
-        Private method, should not be used outside of the library
+        Runs all tasks in the group.
+
+        Private method, should not be used outside of the library.
         """
         if self._limiter:
             async with self._limiter:
