@@ -75,7 +75,7 @@ def make_fastapi_router(aioclock: AioClock, router: Union[APIRouter, None] = Non
 
     @router.get("/tasks", response_model=list[TaskMetadata])
     async def get_tasks():
-        """Get metadata of all tasks in the AioClock instance."""
+        """Retrieve metadata of all tasks in the AioClock instance."""
         return await get_metadata_of_all_tasks(aioclock)
 
     @router.post("/task/{task_id}")
