@@ -41,12 +41,12 @@ class AioClock:
         
     """
 
-    def __init__(self, limiter: Union[asyncio.Semaphore, None] = None):
+    def __init__(self, limiter: Union[anyio.CapacityLimiter, None] = None):
         """
         Initialize AioClock instance.
 
         Args:
-            limiter (Union[asyncio.Semaphore, None]): A semaphore to limit the number of concurrent tasks.
+            limiter (Union[anyio.CapacityLimiter, None]): A capacity limiter to manage the concurrency of tasks.
         """
         self._groups: list[Group] = []
         self._app_tasks: list[Task] = []
