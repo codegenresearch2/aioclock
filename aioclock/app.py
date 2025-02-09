@@ -1,7 +1,7 @@
 import asyncio
 import sys
 from functools import wraps
-from typing import Any, Awaitable, Callable, TypeVar, Union
+from typing import Any, Awaitable, Callable, Optional, TypeVar, Union
 
 if sys.version_info < (3, 10):
     from typing_extensions import ParamSpec
@@ -10,6 +10,7 @@ else:
 
 from fast_depends import inject
 from asyncer import asyncify
+import anyio
 
 from aioclock.custom_types import Triggers
 from aioclock.group import Group, Task
@@ -41,12 +42,12 @@ class AioClock:
         
     """
 
-    def __init__(self, limiter: Union[anyio.CapacityLimiter, None] = None):
+    def __init__(self, limiter: Optional[anyio.CapacityLimiter] = None):
         """
         Initialize AioClock instance.
 
         Args:
-            limiter (Union[anyio.CapacityLimiter, None]): A capacity limiter to manage the concurrency of tasks.
+            limiter (Optional[anyio.CapacityLimiter]): A capacity limiter to manage the concurrency of tasks.
         """
         self._groups: list[Group] = []
         self._app_tasks: list[Task] = []
