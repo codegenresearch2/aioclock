@@ -21,18 +21,25 @@ P = ParamSpec("P")
 
 
 class Group:
-    def __init__(self):
+    def __init__(self, limiter=None):
         """
         Group of tasks that will be run together.
+
+        :param limiter: Optional[anyio.CapacityLimiter] - A limiter to enforce task execution limits.
         """
-        self._tasks = []
+        self._tasks: list[Task] = []
+        self._limiter = limiter
 
     def task(self, *, trigger: BaseTrigger):
-        """Function used to decorate tasks, to be registered inside AioClock."""
+        """Function used to decorate tasks, to be registered inside AioClock."
+
+        :param trigger: BaseTrigger - The trigger that determines when the task should run.
+        :return: Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]] - The decorated function.
+        """
 
         def decorator(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
             @wraps(func)
-            async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+            async def wrapped_function(*args: P.args, **kwargs: P.kwargs) -> T:
                 if asyncio.iscoroutinefunction(func):
                     return await func(*args, **kwargs)
                 else:
@@ -40,11 +47,11 @@ class Group:
 
             self._tasks.append(
                 Task(
-                    func=inject(wrapper, dependency_overrides_provider=get_provider()),
+                    func=inject(wrapped_function, dependency_overrides_provider=get_provider()),
                     trigger=trigger,
                 )
             )
-            return wrapper
+            return wrapped_function
 
         return decorator
 
