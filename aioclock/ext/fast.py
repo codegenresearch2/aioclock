@@ -3,7 +3,7 @@
 Use cases:
     - Expose the tasks of the AioClock instance in an HTTP API.
     - Show to your client which task is going to be run next, and at which time.
-    - Run a specific task from an HTTP API immidiately if needed.
+    - Run a specific task from an HTTP API immediately if needed.
 
 To use FastAPI Extension, please make sure you do `pip install aioclock[fastapi]`.
 
@@ -26,16 +26,11 @@ except ImportError:
 
 
 def make_fastapi_router(aioclock: AioClock, router: Union[APIRouter, None] = None):
-    """Make a FastAPI router that exposes the tasks of the AioClock instance and its external python API in HTTP Layer.
+    """Make a FastAPI router that exposes the tasks of the AioClock instance and its external Python API in HTTP Layer.
     You can pass a router to this function, and have dependencies injected in the router, or any authorization logic that you want to have.
 
-
-    params:
-        aioclock: AioClock instance to get the tasks from.
-        router: FastAPI router to add the routes to. If not provided, a new router will be created.
-
     Example:
-        ```python
+        
         import asyncio
         from contextlib import asynccontextmanager
 
@@ -74,16 +69,18 @@ def make_fastapi_router(aioclock: AioClock, router: Union[APIRouter, None] = Non
         if __name__ == "__main__":
             import uvicorn
             # uvicorn.run(app)
-        ```
+        
     """
     router = router or APIRouter()
 
-    @router.get("/tasks")
-    async def get_tasks() -> list[TaskMetadata]:
+    @router.get("/tasks", response_model=list[TaskMetadata])
+    async def get_tasks():
+        """Get metadata of all tasks in the AioClock instance."""
         return await get_metadata_of_all_tasks(aioclock)
 
     @router.post("/task/{task_id}")
     async def run_task(task_id: UUID):
+        """Run a specific task immediately by its ID."""
         try:
             await run_specific_task(task_id, aioclock)
         except TaskIdNotFound:
