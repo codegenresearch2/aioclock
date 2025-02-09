@@ -7,11 +7,11 @@ Other tools and extension are written from this tool.
 !!! danger "Note when writing to aioclock API and changing its state."\n    Right now the state of AioClock instance is on the memory level, so if you write an API and change a task's trigger time, it will not persist.
     In future we might store the state of AioClock instance in a database, so that it always remains same.
     But this is a bit tricky and implicit because then your code gets ignored and database is preferred over the database.
-    For now you may consider it as a way to change something without redeploying the application, but it is not very recommended to write.
+    For now you may consider it as a way to change something without redeploying the application, but it is not very recommended to write."
 """
 
 import sys
-from typing import Any, Awaitable, Callable, TypeVar, Union, Optional
+from typing import Any, Awaitable, Callable, TypeVar, Union
 from uuid import UUID
 
 from fast_depends import inject
@@ -37,16 +37,20 @@ class TaskMetadata(BaseModel):
     Attributes:
         id: UUID: Task ID that is unique for each task, and changes every time you run the aioclock app.
             In future we might store task ID in a database, so that it always remains same.
-        trigger: Optional[TriggerT]: Trigger that is used to run the task, type is also any to ease implementing new triggers.
+        trigger: Union[TriggerT, Any]: Trigger that is used to run the task, type is also any to ease implementing new triggers.
         task_name: str: Name of the task function.
     """
     id: UUID
-    trigger: Optional[TriggerT]
+    trigger: Union[TriggerT, Any]
     task_name: str
 
 
 async def run_specific_task(task_id: UUID, app: AioClock) -> Any:
-    """Run a specific task immediately by its ID, from the AioClock instance."
+    """Run a specific task immediately by its ID, from the AioClock instance.
+
+    Parameters:
+        task_id (UUID): The ID of the task to run.
+        app (AioClock): The AioClock instance to run the task on.
 
     Example:
         \"\"\"python
@@ -61,7 +65,6 @@ async def run_specific_task(task_id: UUID, app: AioClock) -> Any:
         async def some_other_func():
             await run_specific_task(app._tasks[0].id, app)
         \"\"\"
-
     """
     task = next((task for task in app._tasks if task.id == task_id), None)
     if not task:
@@ -70,7 +73,10 @@ async def run_specific_task(task_id: UUID, app: AioClock) -> Any:
 
 
 async def run_with_injected_deps(func: Callable[P, Awaitable[T]]) -> T:
-    """Runs an aioclock decorated function, with all the dependencies injected."
+    """Runs an aioclock decorated function, with all the dependencies injected.
+
+    Parameters:
+        func (Callable[P, Awaitable[T]]): The function to run.
 
     Example:
         \"\"\"python
@@ -91,13 +97,18 @@ async def run_with_injected_deps(func: Callable[P, Awaitable[T]]) -> T:
             foo = await run_with_injected_deps(main)
             assert foo == 1
         \"\"\"
-
     """
     return await inject(func, dependency_overrides_provider=get_provider())()  # type: ignore
 
 
 async def get_metadata_of_all_tasks(app: AioClock) -> list[TaskMetadata]:
-    """Get metadata of all tasks that are included in the AioClock instance."
+    """Get metadata of all tasks that are included in the AioClock instance.
+
+    Parameters:
+        app (AioClock): The AioClock instance to get tasks from.
+
+    Note:
+        Users should be aware that modifying the returned TaskMetadata objects may have unintended consequences.
 
     Example:
         \"\"\"python
@@ -120,4 +131,3 @@ async def get_metadata_of_all_tasks(app: AioClock) -> list[TaskMetadata]:
         )
         for task in app._get_tasks(exclude_type=set())
     ]
-python}
