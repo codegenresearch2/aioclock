@@ -1,5 +1,4 @@
 import asyncio
-import threading
 from aioclock import AioClock, Depends, Every, Group, OnShutDown, OnStartUp
 
 # service1.py
@@ -7,17 +6,17 @@ group = Group()
 
 
 def dependency() -> str:
-    return f"Running on thread {threading.current_thread().ident}"
+    return "Dependency value"
 
 
 @group.task(trigger=Every(seconds=2.01))
 def sync_task_1(val: str = Depends(dependency)) -> None:
-    print(f"Sync task 1 ({threading.current_thread().ident}) is running. {val}")
+    print(f"Sync task 1 is running. {val}")
 
 
 @group.task(trigger=Every(seconds=2.01))
 def sync_task_2(val: str = Depends(dependency)) -> str:
-    print(f"Sync task 2 ({threading.current_thread().ident}) is running. {val}")
+    print(f"Sync task 2 is running. {val}")
     # Simulate a blocking operation
     import time
     time.sleep(1)
@@ -26,7 +25,7 @@ def sync_task_2(val: str = Depends(dependency)) -> str:
 
 @group.task(trigger=Every(seconds=2.01))
 async def async_task(val: str = Depends(dependency)) -> None:
-    print(f"Async task ({threading.current_thread().ident}) is running. {val}")
+    print(f"Async task is running. {val}")
 
 
 # app.py
@@ -36,12 +35,12 @@ app.include_group(group)
 
 @app.task(trigger=OnStartUp())
 def startup(val: str = Depends(dependency)) -> None:
-    print(f"Startup task ({threading.current_thread().ident}) is running. {val}")
+    print(f"Startup task is running. {val}")
 
 
 @app.task(trigger=OnShutDown())
 def shutdown(val: str = Depends(dependency)) -> None:
-    print(f"Shutdown task ({threading.current_thread().ident}) is running. {val}")
+    print(f"Shutdown task is running. {val}")
 
 
 if __name__ == "__main__":
