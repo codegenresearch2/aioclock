@@ -6,14 +6,14 @@ from annotated_types import Interval
 from aioclock.utils import StrEnum
 
 EveryT = Literal[
-    "every monday",
-    "every tuesday",
-    "every wednesday",
-    "every thursday",
-    "every friday",
-    "every saturday",
-    "every sunday",
-    "every day",
+    'every monday',
+    'every tuesday',
+    'every wednesday',
+    'every thursday',
+    'every friday',
+    'every saturday',
+    'every sunday',
+    'every day',
 ]
 
 SecondT = Annotated[int, Interval(ge=0, le=59)]
@@ -37,4 +37,4 @@ class Triggers(StrEnum):
     ON_SHUT_DOWN = auto()
     """Trigger on application shut down."""
     AT = auto()
-    """Trigger at a specific time."""
+    """Trigger at a specific time."
