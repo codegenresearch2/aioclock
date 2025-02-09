@@ -77,7 +77,7 @@ class BaseTrigger(BaseModel, ABC, Generic[TriggerTypeT]):
         `should_trigger` checks if the event should be triggered or not.
         If not, then the event will not be triggered anymore.
         You can save the state of the trigger and task inside the instance, and then check if the event should be triggered or not.
-        For instance, in `LoopCounter` trigger, it keeps track of the number of times the event has been triggered,
+        For instance, in `LoopController` trigger, it keeps track of the number of times the event has been triggered,
         and then checks if the event should be triggered or not.
         """
         return True
