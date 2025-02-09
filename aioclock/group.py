@@ -9,6 +9,7 @@ else:
     from typing import ParamSpec
 
 from fast_depends import inject
+from asyncer import asyncify
 
 from aioclock.provider import get_provider
 from aioclock.task import Task
@@ -19,7 +20,7 @@ P = ParamSpec("P")
 
 
 class Group:
-    def __init__(self, *, tasks: Union[list[Task], None] = None):
+    def __init__(self, *, tasks: Union[list[Task], None] = None, limiter=None):
         """
         Group of tasks that will be run together.
 
@@ -42,9 +43,9 @@ class Group:
             # app.py
             aio_clock = AioClock()
             aio_clock.include_group(email_group)
-            \"\"\"
-        """
+            \"\"\"""
         self._tasks: list[Task] = tasks or []
+        self.limiter = limiter
 
     def task(self, *, trigger: BaseTrigger):
         """Function used to decorate tasks, to be registered inside AioClock.
@@ -55,13 +56,15 @@ class Group:
             @group.task(trigger=Forever())
             async def send_email():
                 ...
-            \"\"\"
-        """
+            \"\"\"""
 
         def decorator(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
             @wraps(func)
             async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-                return await func(*args, **kwargs)
+                if asyncify(func) is not func:
+                    return await func(*args, **kwargs)
+                else:
+                    return await asyncio.to_thread(func, *args, **kwargs)
 
             self._tasks.append(
                 Task(
