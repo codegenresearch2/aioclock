@@ -69,7 +69,7 @@ class AioClock:
         """Dependencies provider that will be used to inject dependencies in tasks."""
         return get_provider()
 
-    def override_dependencies(self, original: Callable[..., Any], override: Callable[..., Any]):
+    def override_dependencies(self, original: Callable[..., Any], override: Callable[..., Any]) -> None:
         """Override a dependency with a new one.
 
         Example:
