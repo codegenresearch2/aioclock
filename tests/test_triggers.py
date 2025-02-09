@@ -59,7 +59,7 @@ async def test_loop_controller():
     assert trigger.should_trigger() is False
 
     class IterateFiveTime(LoopController):
-        type_ = 'foo'
+        type_: str = 'foo'
 
         async def trigger_next(self) -> None:
             self._increment_loop_counter()
@@ -97,8 +97,12 @@ async def test_every():
 
 
 @pytest.mark.asyncio
-async def test_cron_trigger():
+async def test_cron():
     # Add a test for the Cron trigger to ensure comprehensive coverage.
     trigger = Cron(cron='0 12 * * *', tz='Asia/Kolkata')
     assert trigger.get_waiting_time_till_next_trigger() > 0
     await trigger.trigger_next()
+
+    # Add more tests to ensure robustness
+    # For example, test with different cron expressions and timezones
+}
