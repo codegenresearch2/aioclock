@@ -14,6 +14,7 @@ from asyncer import asyncify
 from aioclock.provider import get_provider
 from aioclock.task import Task
 from aioclock.triggers import BaseTrigger
+import anyio
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -32,7 +33,7 @@ class Group:
         :type limiter: Optional[anyio.CapacityLimiter]
         """
         self._tasks: list[Task] = []
-        self.limiter = limiter
+        self._limiter = limiter
 
     def task(self, *, trigger: BaseTrigger):
         """
@@ -47,7 +48,7 @@ class Group:
         def decorator(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
             @wraps(func)
             async def wrapped_function(*args: P.args, **kwargs: P.kwargs) -> T:
-                if asyncify(func) is not func:
+                if asyncio.iscoroutinefunction(func):
                     return await func(*args, **kwargs)
                 else:
                     return await asyncio.to_thread(func, *args, **kwargs)
