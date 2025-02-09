@@ -9,7 +9,7 @@ group = Group()
 
 
 def dependency() -> str:
-    return 'Hello, world!'  # Simplified dependency function
+    return 'Hello, world! (Thread ID: ' + str(threading.current_thread().ident) + ')'  # Dependency function with thread context
 
 @group.task(trigger=Every(seconds=2))
 async def my_async_task(val: str = Depends(dependency)):
@@ -23,11 +23,13 @@ app.include_group(group)
 def sync_task_1():
     print(f'Startup Task (Thread ID: {threading.current_thread().ident})')
     time.sleep(1)  # Simulate blocking operation
+    return 'Startup completed.'
 
 @app.task(trigger=OnShutDown())
 def sync_task_2():
     print(f'Shutdown Task (Thread ID: {threading.current_thread().ident})')
     time.sleep(1)  # Simulate blocking operation
+    return 'Shutdown completed.'
 
 if __name__ == '__main__':
     asyncio.run(app.serve())
