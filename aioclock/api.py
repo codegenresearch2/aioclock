@@ -118,7 +118,7 @@ async def get_metadata_of_all_tasks(app: AioClock) -> list[TaskMetadata]:
     !!! warning "Mutating the TaskMetadata object"
         The TaskMetadata object is a data class that represents the metadata of a task.
         It is not recommended to mutate the object, as it may lead to unexpected behavior.
-        If you need to change the metadata of a task, it is recommended to create a new task with the updated metadata.
+        In the future, we might consider storing the metadata in a database to ensure consistency.
 
     Example:
         
