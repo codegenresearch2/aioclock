@@ -33,7 +33,7 @@ def make_fastapi_router(aioclock: AioClock, router: Union[APIRouter, None] = Non
         aioclock (AioClock): The AioClock instance to interact with.
         router (Union[APIRouter, None]): An optional FastAPI router to include the endpoints.
 
-    Example:
+    Examples:
         
         import asyncio
         from contextlib import asynccontextmanager
