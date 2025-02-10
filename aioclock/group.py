@@ -66,12 +66,6 @@ class Group:
         """
         if self._limiter:
             async with self._limiter:
-                await asyncio.gather(
-                    *(task.run() for task in self._tasks),
-                    return_exceptions=False,
-                )
+                await asyncio.gather(*(task.run() for task in self._tasks), return_exceptions=False)
         else:
-            await asyncio.gather(
-                *(task.run() for task in self._tasks),
-                return_exceptions=False,
-            )
+            await asyncio.gather(*(task.run() for task in self._tasks), return_exceptions=False)
