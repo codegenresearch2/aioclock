@@ -21,15 +21,15 @@ P = ParamSpec("P")
 
 
 class Group:
-    def __init__(self):
+    def __init__(self, *, limiter: Union[CapacityLimiter, None] = None):
         """
         Group of tasks that will be run together.
 
-        Best use case is to have a good modularity and separation of concerns.
-        For example, you can have a group of tasks that are responsible for sending emails.
-        And another group of tasks that are responsible for sending notifications.
+        Args:
+            limiter (CapacityLimiter, optional): Limiter object to limit the number of concurrent tasks.
         """
         self._tasks: list[Task] = []
+        self._limiter = limiter
 
     def task(self, *, trigger: BaseTrigger):
         """Function used to decorate tasks, to be registered inside AioClock.
@@ -43,30 +43,33 @@ class Group:
 
         def decorator(func: Callable[P, Union[Awaitable[T], T]]) -> Callable[P, Union[Awaitable[T], T]]:
             @wraps(func)
-            def wrapper(*args: P.args, **kwargs: P.kwargs) -> Union[Awaitable[T], T]:
+            async def wrapped_function(*args: P.args, **kwargs: P.kwargs) -> Union[Awaitable[T], T]:
                 if asyncio.iscoroutinefunction(func):
-                    return func(*args, **kwargs)
+                    return await func(*args, **kwargs)
                 else:
                     return asyncify(func)(*args, **kwargs)
 
             task = Task(
-                func=inject(wrapper, dependency_overrides_provider=get_provider()),
+                func=inject(wrapped_function, dependency_overrides_provider=get_provider()),
                 trigger=trigger,
             )
             self._tasks.append(task)
-            return wrapper
+            return wrapped_function
 
         return decorator
 
-    async def _run(self, limiter: CapacityLimiter):
+    async def _run(self):
         """
         Just for purpose of being able to run all task in group
         Private method, should not be used outside of the library
-
-        Args:
-            limiter (CapacityLimiter): Limiter object to limit the number of concurrent tasks.
         """
-        async with limiter:
+        if self._limiter:
+            async with self._limiter:
+                await asyncio.gather(
+                    *(task.run() for task in self._tasks),
+                    return_exceptions=False,
+                )
+        else:
             await asyncio.gather(
                 *(task.run() for task in self._tasks),
                 return_exceptions=False,
