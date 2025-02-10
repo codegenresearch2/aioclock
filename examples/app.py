@@ -1,59 +1,39 @@
 import asyncio
-import time
+import threading
 from typing import Annotated
 from aioclock import AioClock, Depends, Every, Group, OnShutDown, OnStartUp
-from aioclock.triggers import Trigger
 
 # service1.py
 group = Group()
 
 def dependency():
-    """A simple dependency function that returns a greeting."""
-    return "Hello, world!"
+    """A dependency function that returns a greeting with thread context."""
+    return f"Hello, world! - Thread ID: {threading.current_thread().ident}"
 
 @group.task(trigger=Every(seconds=2))
-def my_task(val: Annotated[str, Depends(dependency)]):
-    """A synchronous task that prints a value from a dependency function.
-
-    Args:
-        val (str): The value to print. This is a dependency that is injected into the function.
-    """
-    print(f"Task 1: {val} - Thread ID: {threading.get_ident()}")
-    time.sleep(1)
-    return "Task 1 completed"
+def print_greeting(val: Annotated[str, Depends(dependency)]):
+    """A synchronous task that prints a value from a dependency function."""
+    print(f"Print Greeting Task: {val}")
 
 @group.task(trigger=Every(seconds=2.01))
-def my_task2(val: Annotated[str, Depends(dependency)]):
-    """A synchronous task that prints a value from a dependency function.
-
-    Args:
-        val (str): The value to print. This is a dependency that is injected into the function.
-    """
-    print(f"Task 2: {val} - Thread ID: {threading.get_ident()}")
-    time.sleep(1)
-    return "Task 2 completed"
+async def async_task(val: Annotated[str, Depends(dependency)]):
+    """An asynchronous task that prints a value from a dependency function."""
+    print(f"Async Task: {val}")
+    await asyncio.sleep(1)
 
 # app.py
 app = AioClock()
 app.include_group(group)
 
 @app.task(trigger=OnStartUp())
-def startup(val: Annotated[str, Depends(dependency)]):
-    """A synchronous task that prints a welcome message when the application starts up.
-
-    Args:
-        val (str): The value to print. This is a dependency that is injected into the function.
-    """
-    print(f"Startup: {val} - Thread ID: {threading.get_ident()}")
+def startup_task(val: Annotated[str, Depends(dependency)]):
+    """A synchronous task that prints a welcome message when the application starts up."""
+    print(f"Startup Task: {val}")
 
 @app.task(trigger=OnShutDown())
-def shutdown(val: Annotated[str, Depends(dependency)]):
-    """A synchronous task that prints a goodbye message when the application shuts down.
-
-    Args:
-        val (str): The value to print. This is a dependency that is injected into the function.
-    """
-    print(f"Shutdown: {val} - Thread ID: {threading.get_ident()}")
+def shutdown_task(val: Annotated[str, Depends(dependency)]):
+    """A synchronous task that prints a goodbye message when the application shuts down."""
+    print(f"Shutdown Task: {val}")
 
 if __name__ == "__main__":
     asyncio.run(app.serve())
