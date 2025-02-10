@@ -12,7 +12,7 @@ Other tools and extension are written from this tool.
 """
 
 import sys
-from typing import Any, Awaitable, Callable, Optional, TypeVar, Union
+from typing import Any, Awaitable, Callable, TypeVar, Union
 from uuid import UUID
 
 from fast_depends import inject
@@ -50,7 +50,17 @@ class TaskMetadata(BaseModel):
 async def run_specific_task(task_id: UUID, app: AioClock) -> T:
     """Run a specific task immediately by its ID, from the AioClock instance.
 
-    Example:
+    Args:
+        task_id (UUID): The ID of the task to run.
+        app (AioClock): The AioClock instance.
+
+    Returns:
+        T: The result of the task execution.
+
+    Raises:
+        TaskIdNotFound: If the task with the given ID is not found.
+
+    Examples:
         
         from aioclock import AioClock, Once
         from aioclock.api import run_specific_task
@@ -64,7 +74,6 @@ async def run_specific_task(task_id: UUID, app: AioClock) -> T:
         async def some_other_func():
             await run_specific_task(app._tasks[0].id, app)
         
-
     """
     task = next((task for task in app._tasks if task.id == task_id), None)
     if task is None:
@@ -75,7 +84,13 @@ async def run_specific_task(task_id: UUID, app: AioClock) -> T:
 async def run_with_injected_deps(func: Callable[P, Awaitable[T]]) -> T:
     """Runs an aioclock decorated function, with all the dependencies injected.
 
-    Example:
+    Args:
+        func (Callable[P, Awaitable[T]]): The task function to run.
+
+    Returns:
+        T: The result of the task execution.
+
+    Examples:
         
         from aioclock import Once, AioClock, Depends
         from aioclock.api import run_with_injected_deps
@@ -94,7 +109,6 @@ async def run_with_injected_deps(func: Callable[P, Awaitable[T]]) -> T:
             foo = await run_with_injected_deps(main)
             assert foo == 1
         
-
     """
     return await inject(func, dependency_overrides_provider=get_provider())()  # type: ignore
 
@@ -102,7 +116,13 @@ async def run_with_injected_deps(func: Callable[P, Awaitable[T]]) -> T:
 async def get_metadata_of_all_tasks(app: AioClock) -> list[TaskMetadata]:
     """Get metadata of all tasks that are included in the AioClock instance.
 
-    Example:
+    Args:
+        app (AioClock): The AioClock instance.
+
+    Returns:
+        list[TaskMetadata]: A list of metadata for all tasks.
+
+    Examples:
         
         from aioclock import AioClock, Once
         from aioclock.api import get_metadata_of_all_tasks
