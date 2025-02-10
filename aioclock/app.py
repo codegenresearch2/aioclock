@@ -1,23 +1,20 @@
 """
 To initialize the AioClock instance, you need to import the AioClock class from the aioclock module.
-AioClock class represent the aioclock, and handle the tasks and groups that will be run by the aioclock.
+AioClock class represents the aioclock, and handles the tasks and groups that will be run by the aioclock.
 
-Another way to modulize your code is to use `Group` which is kinda the same idea as router in web frameworks.
+Another way to modularize your code is to use `Group`, which is similar to a router in web frameworks.
 """
 
 import asyncio
 import sys
 from functools import wraps
-from typing import Any, Callable, Optional, TypeVar, Union
-
-import anyio
+from typing import Any, Awaitable, Callable, TypeVar, Union
 
 if sys.version_info < (3, 10):
     from typing_extensions import ParamSpec
 else:
     from typing import ParamSpec
 
-from asyncer import asyncify
 from fast_depends import inject
 
 from aioclock.custom_types import Triggers
@@ -36,46 +33,36 @@ class AioClock:
     It will be responsible for running the tasks in the right order.
 
     Example:
-        ```python
+        
         from aioclock import AioClock, Once
         app = AioClock()
 
         @app.task(trigger=Once())
         async def main():
             print("Hello World")
-        ```
+        
 
-    To run the aioclock final app simply do:
+    To run the AioClock app, simply do:
 
     Example:
-        ```python
+        
         from aioclock import AioClock, Once
         import asyncio
 
         app = AioClock()
 
-        # whatever next comes here
+        # whatever comes next
         asyncio.run(app.serve())
-        ```
-
+        
     """
 
-    def __init__(self, limiter: Optional[anyio.CapacityLimiter] = None):
+    def __init__(self):
         """
         Initialize AioClock instance.
         No parameters are needed.
-
-        Attributes:
-            limiter:
-                Anyio CapacityLimiter. capacity limiter to use to limit the total amount of threads running
-                Limiter that will be used to limit the number of tasks that are running at the same time.
-                If not provided, it will fallback to the default limiter set on Application level.
-                If no limiter is set on Application level, it will fallback to the default limiter set by AnyIO.
-
         """
         self._groups: list[Group] = []
         self._app_tasks: list[Task] = []
-        self._limiter = limiter
 
     _groups: list[Group]
     """List of groups that will be run by AioClock."""
@@ -93,14 +80,8 @@ class AioClock:
     ) -> None:
         """Override a dependency with a new one.
 
-        params:
-            original:
-                Original dependency that will be overridden.
-            override:
-                New dependency that will override the original one.
-
         Example:
-            ```python
+            
             from aioclock import AioClock
 
             def original_dependency():
@@ -111,20 +92,15 @@ class AioClock:
 
             app = AioClock()
             app.override_dependencies(original=original_dependency, override=new_dependency)
-            ```
-
+            
         """
         self.dependencies.override(original, override)
 
     def include_group(self, group: Group) -> None:
         """Include a group of tasks that will be run by AioClock.
 
-        params:
-            group:
-                Group of tasks that will be run together.
-
         Example:
-            ```python
+            
             from aioclock import AioClock, Group, Once
 
             app = AioClock()
@@ -135,26 +111,16 @@ class AioClock:
                 print("Hello World")
 
             app.include_group(group)
-            ```
+            
         """
         self._groups.append(group)
         return None
 
     def task(self, *, trigger: BaseTrigger):
-        """
-        Decorator to add a task to the AioClock instance.
-        If decorated function is sync, aioclock will run it in a thread pool executor, using AnyIO.
-        But if you try to run the decorated function, it will run in the same thread, blocking the event loop.
-        It is intended to not change all your `sync functions` to coroutine functions,
-            and they can be used outside of aioclock, if needed.
-
-        params:
-            trigger: BaseTrigger
-                Trigger that will trigger the task to be running.
+        """Decorator to add a task to the AioClock instance.
 
         Example:
-            ```python
-
+            
             from aioclock import AioClock, Once
 
             app = AioClock()
@@ -162,32 +128,21 @@ class AioClock:
             @app.task(trigger=Once())
             async def main():
                 print("Hello World")
-            ```
+            
         """
 
-        def decorator(func):
+        def decorator(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
             @wraps(func)
-            async def wrapped_funciton(*args, **kwargs):
-                if asyncio.iscoroutinefunction(func):
-                    return await func(*args, **kwargs)
-                else:  # run in threadpool to make sure it's not blocking the event loop
-                    return await asyncify(func, limiter=self._limiter)(*args, **kwargs)
+            async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+                return await func(*args, **kwargs)
 
             self._app_tasks.append(
                 Task(
-                    func=inject(wrapped_funciton, dependency_overrides_provider=get_provider()),
+                    func=inject(wrapper, dependency_overrides_provider=get_provider()),
                     trigger=trigger,
                 )
             )
-            if asyncio.iscoroutinefunction(func):
-                return wrapped_funciton
-            else:
-
-                @wraps(func)
-                def wrapper(*args, **kwargs):
-                    return func(*args, **kwargs)
-
-                return wrapper
+            return wrapper
 
         return decorator
 
@@ -217,9 +172,8 @@ class AioClock:
         Run the tasks in the right order.
         First, run the startup tasks, then run the tasks, and finally run the shutdown tasks.
         """
-        group = Group()
-        group._tasks = self._app_tasks
-        self.include_group(group)
+
+        self.include_group(Group(tasks=self._app_tasks))
         try:
             await asyncio.gather(
                 *(task.run() for task in self._get_startup_task()), return_exceptions=False
