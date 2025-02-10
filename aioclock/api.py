@@ -50,7 +50,7 @@ class TaskMetadata(BaseModel):
 async def run_specific_task(task_id: UUID, app: AioClock) -> T:
     """Run a specific task immediately by its ID, from the AioClock instance.
 
-    Args:
+    Parameters:
         task_id (UUID): The ID of the task to run.
         app (AioClock): The AioClock instance.
 
@@ -84,7 +84,7 @@ async def run_specific_task(task_id: UUID, app: AioClock) -> T:
 async def run_with_injected_deps(func: Callable[P, Awaitable[T]]) -> T:
     """Runs an aioclock decorated function, with all the dependencies injected.
 
-    Args:
+    Parameters:
         func (Callable[P, Awaitable[T]]): The task function to run.
 
     Returns:
@@ -116,7 +116,7 @@ async def run_with_injected_deps(func: Callable[P, Awaitable[T]]) -> T:
 async def get_metadata_of_all_tasks(app: AioClock) -> list[TaskMetadata]:
     """Get metadata of all tasks that are included in the AioClock instance.
 
-    Args:
+    Parameters:
         app (AioClock): The AioClock instance.
 
     Returns:
