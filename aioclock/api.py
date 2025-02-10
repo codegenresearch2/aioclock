@@ -59,7 +59,7 @@ async def run_specific_task(task_id: UUID, app: AioClock):
     Returns:
         The result of running the task.
 
-    Example:
+    Examples:
         
         from aioclock import AioClock, Once
         from aioclock.api import run_specific_task
@@ -89,7 +89,7 @@ async def run_with_injected_deps(func: Callable[P, Awaitable[T]]) -> T:
     Returns:
         The result of running the task.
 
-    Example:
+    Examples:
         
         from aioclock import Once, AioClock, Depends
         from aioclock.api import run_with_injected_deps
@@ -124,7 +124,7 @@ async def get_metadata_of_all_tasks(app: AioClock) -> list[TaskMetadata]:
     Note:
         The returned list is a copy of the internal list of tasks, so modifying it will not affect the AioClock instance.
 
-    Example:
+    Examples:
         
         from aioclock import AioClock, Once
         from aioclock.api import get_metadata_of_all_tasks
