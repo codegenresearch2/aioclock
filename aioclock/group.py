@@ -26,7 +26,8 @@ class Group:
         A group of tasks that will be run together.
 
         Args:
-            limiter (Optional[CapacityLimiter], optional): A limiter to limit the number of concurrent tasks.
+            limiter (Optional[CapacityLimiter], optional): A limiter to control the number of concurrent tasks.
+                If provided, it ensures that no more than the specified number of tasks are running at any time.
         """
         self._tasks: list[Task] = []
         self._limiter = limiter
