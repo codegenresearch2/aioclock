@@ -105,6 +105,7 @@ class AioClock:
             
         """
         self._groups.append(group)
+        return None
 
     def task(self, *, trigger: BaseTrigger) -> Callable[P, Callable[P, Awaitable[T]]]:
         """Decorator to add a task to the AioClock instance.
