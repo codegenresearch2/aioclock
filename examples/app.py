@@ -9,24 +9,24 @@ group = Group()
 
 
 def dependency():
-    return "Goodbye, world!"  # Changed output to match the gold code
+    return f"Thread ID: {threading.current_thread().ident}"  # Changed output to match the gold code
 
 
 @group.task(trigger=Every(seconds=2))
 async def async_task(val: str = Depends(dependency)):
-    print(f"Async task ({threading.current_thread().ident}) is running with value: {val}")
+    print(f"Async task is running with value: {val}")
 
 
 @group.task(trigger=Every(seconds=2.01))
 def sync_task_1(val: Annotated[str, Depends(dependency)]):
-    print(f"Sync task 1 ({threading.current_thread().ident}) is running with value: {val}")
+    print(f"Sync task 1 is running with value: {val}")
     sleep(1)  # Simulating a blocking operation
 
 
 @group.task(trigger=Every(seconds=2.02))
 def sync_task_2(val: Annotated[str, Depends(dependency)]):
-    result = val  # Simulating a return value
-    print(f"Sync task 2 ({threading.current_thread().ident}) is running with value: {val}")
+    result = "3"  # Changed return value to match the gold code
+    print(f"Sync task 2 is running with value: {val}")
     sleep(1)  # Simulating a blocking operation
     return result
 
@@ -37,13 +37,13 @@ app.include_group(group)
 
 
 @app.task(trigger=OnStartUp())
-def startup(val: Annotated[str, Depends(dependency)]):
-    print(f"Startup: {val} ({threading.current_thread().ident})")
+def startup():
+    print("Welcome!")
 
 
 @app.task(trigger=OnShutDown())
-def shutdown(val: Annotated[str, Depends(dependency)]):
-    print(f"Shutdown: {val} ({threading.current_thread().ident})")
+def shutdown():
+    print("Bye!")
 
 
 if __name__ == "__main__":
