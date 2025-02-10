@@ -38,7 +38,7 @@ class AioClock:
         """
         self._groups: list[Group] = []
         self._app_tasks: list[Task] = []
-        self.limiter = limiter
+        self._limiter = limiter
 
     _groups: list[Group] = []
     """List of groups that will be run by AioClock."""
