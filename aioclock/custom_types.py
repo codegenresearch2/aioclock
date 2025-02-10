@@ -24,9 +24,6 @@ PositiveNumber = Annotated[Union[int, float], Interval(ge=0)]
 
 
 class Triggers(StrEnum):
-    # TODO: support cron job trigger
-    # CRON = auto()
-    # """Cron job trigger."""
     EVERY = auto()
     """Every (x) time units, it gets triggered."""
     ONCE = auto()
@@ -39,3 +36,5 @@ class Triggers(StrEnum):
     """Trigger on application shut down."""
     AT = auto()
     """Trigger at a specific time."""
+    CRON = auto()
+    """Cron job trigger."""
