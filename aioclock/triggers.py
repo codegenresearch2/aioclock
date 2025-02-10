@@ -2,11 +2,11 @@
 Triggers are used to determine when the event should be triggered. It can be based on time, or some other condition.
 You can create custom triggers by inheriting from `BaseTrigger` class.
 
-!!! info "Don't run CPU intensitve or thread-block IO task "
+!!! info "Don't run CPU intensive or thread-block IO task "
     AioClock's trigger are all running in async, only on one CPU.
     So, if you run a CPU intensive task, or a task that blocks the thread, then it will block the entire event loop.
     If you have a sync IO task, then it's recommended to use `run_in_executor` to run the task in a separate thread.
-    Or use similiar libraries like `asyncer` or `trio` to run the task in a separate thread.
+    Or use similar libraries like `asyncer` or `trio` to run the task in a separate thread.
 """
 
 import asyncio
@@ -29,14 +29,13 @@ class BaseTrigger(BaseModel, ABC, Generic[TriggerTypeT]):
     Base class for all triggers.
     A trigger is a way to determine when the event should be triggered. It can be based on time, or some other condition.
 
-
-    The way trigger are used is as follows:
-        1. An async function which is a task, is decorated with framework, and trigger is the argument for the decorator
+    The way triggers are used is as follows:
+        1. An async function which is a task, is decorated with the framework, and trigger is the argument for the decorator.
         2. `get_waiting_time_till_next_trigger` is called to get the time in seconds, after which the event should be triggered.
         3. If the time is not None, then it logs the time that is predicted for the event to be triggered.
         4. `trigger_next` is called immediately after that, which triggers the event.
 
-    You can create trigger by yourself, by inheriting from `BaseTrigger` class.
+    You can create triggers by yourself, by inheriting from `BaseTrigger` class.
 
     Example:
         
@@ -97,30 +96,29 @@ class Forever(BaseTrigger[Literal[Triggers.FOREVER]]):
 
     Example:
         
-            from aioclock import AioClock, Forever
+        from aioclock import AioClock, Forever
 
-            app = AioClock()
+        app = AioClock()
 
-            # instead of this:
-            async def my_task():
-                while True:
-                    try:
-                        await asyncio.sleep(3)
-                        1/0
-                    except DivisionByZero:
-                        pass
+        # instead of this:
+        async def my_task():
+            while True:
+                try:
+                    await asyncio.sleep(3)
+                    1/0
+                except DivisionByZero:
+                    pass
 
-            # use this:
-            @app.task(trigger=Forever())
-            async def my_task():
-                await asyncio.sleep(3)
-                1/0
+        # use this:
+        @app.task(trigger=Forever())
+        async def my_task():
+            await asyncio.sleep(3)
+            1/0
         
 
     Attributes:
         type_: Type of the trigger. It is a string, which is used to identify the trigger's name.
             You can change the type by using `Generic` type when inheriting from `BaseTrigger`.
-
     """
 
     type_: Literal[Triggers.FOREVER] = Triggers.FOREVER
@@ -158,7 +156,7 @@ class LoopController(BaseTrigger, ABC, Generic[TriggerTypeT]):
     max_loop_count: Union[PositiveInt, None] = None
 
     @model_validator(mode="after")
-    def validate_loop_controll(self):
+    def validate_loop_control(self):
         if "_current_loop_count" in self.model_fields_set:
             raise ValueError("_current_loop_count is a private attribute, should not be provided.")
         return self
@@ -263,8 +261,8 @@ class Every(LoopController[Literal[Triggers.EVERY]]):
 
     Example:
         
-        from aioclock import Aoclock, Every
-        app = Aoclock()
+        from aioclock import AioClock, Every
+        app = AioClock()
 
         app.task(trigger=Every(seconds=3))
         async def task():
@@ -329,7 +327,6 @@ class Every(LoopController[Literal[Triggers.EVERY]]):
         return None
 
     async def get_waiting_time_till_next_trigger(self):
-        # not incremented yet, so the counter is 0
         if self._current_loop_count == 0 and self.first_run_strategy == "immediate":
             return 0
 
@@ -346,9 +343,9 @@ class At(LoopController[Literal[Triggers.AT]]):
 
     Example:
         
-        from aioclock import Aoclock, At
+        from aioclock import AioClock, At
 
-        app = Aoclock()
+        app = AioClock()
 
         @app.task(trigger=At(hour=12, minute=30, tz="Asia/Kolkata"))
         async def task():
@@ -419,10 +416,8 @@ class At(LoopController[Literal[Triggers.AT]]):
             target_time += timedelta(days=(1 if target_time < tz_aware_now else 0))
             return target_time
 
-        # 1 second error
         error_margin = WEEK_TO_SECOND - 1
         if days_ahead == 7 and target_time.timestamp() - tz_aware_now.timestamp() < error_margin:
-            # date is today, and event is about to be triggered today. so no need to shift to 7 days.
             return target_time
 
         return target_time + timedelta(days_ahead)
