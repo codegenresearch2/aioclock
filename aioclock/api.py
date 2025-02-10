@@ -12,7 +12,7 @@ Other tools and extension are written from this tool.
 """
 
 import sys
-from typing import Any, Awaitable, Callable, Optional, TypeVar
+from typing import Any, Awaitable, Callable, Optional, TypeVar, Union
 from uuid import UUID
 
 from fast_depends import inject
@@ -37,12 +37,12 @@ class TaskMetadata(BaseModel):
     Attributes:
         id (UUID): Task ID that is unique for each task, and changes every time you run the aioclock app.
             In future we might store task ID in a database, so that it always remains same.
-        trigger (TriggerT): Trigger that is used to run the task.
+        trigger (Union[TriggerT, Any]): Trigger that is used to run the task, type is also any to ease implementing new triggers.
         task_name (str): Name of the task function.
     """
 
     id: UUID
-    trigger: TriggerT
+    trigger: Union[TriggerT, Any]
     task_name: str
 
 async def run_specific_task(task_id: UUID, app: AioClock):
@@ -114,6 +114,11 @@ async def get_metadata_of_all_tasks(app: AioClock) -> list[TaskMetadata]:
 
     Returns:
         list[TaskMetadata]: A list of TaskMetadata objects representing the tasks.
+
+    !!! warning "Mutating the TaskMetadata object"
+        The TaskMetadata object is a data class that represents the metadata of a task.
+        It is not recommended to mutate the object, as it may lead to unexpected behavior.
+        If you need to change the metadata of a task, it is recommended to create a new task with the updated metadata.
 
     Example:
         
