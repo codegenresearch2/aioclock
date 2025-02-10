@@ -13,7 +13,7 @@ __all__ = [
     "Group",
     "AioClock",
     "At",
-    "Cron"
+    "Cron",
 ]
 
 __version__ = "0.1.1"
