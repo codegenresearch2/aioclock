@@ -11,6 +11,7 @@ You can create custom triggers by inheriting from `BaseTrigger` class.
 
 import asyncio
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from datetime import datetime, timedelta
 from typing import Annotated, Generic, Literal, TypeVar, Union
 
