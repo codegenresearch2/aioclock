@@ -27,7 +27,6 @@ class AioClock:
     It will be responsible for running the tasks in the right order.
 
     Examples:
-        
         from aioclock import AioClock, Once
         import asyncio
 
@@ -38,7 +37,6 @@ class AioClock:
             return 1
 
         asyncio.run(app.serve())
-        
     """
 
     def __init__(self, limiter: Optional[Any] = None):
