@@ -1,22 +1,12 @@
-"""
-External API of the aioclock package, that can be used to interact with the AioClock instance.
-This module could be very useful if you intend to use aioclock in a web application or a CLI tool.
-
-Other tools and extension are written from this tool.
-
-!!! danger "Note when writing to aioclock API and changing its state."
-    Right now the state of AioClock instance is on the memory level, so if you write an API and change a task's trigger time, it will not persist.
-    In future we might store the state of AioClock instance in a database, so that it always remains same.
-    But this is a bit tricky and implicit because then your code gets ignored and database is preferred over the database.
-    For now you may consider it as a way to change something without redeploying the application, but it is not very recommended to write.
-"""
-
+import asyncio
 import sys
 from typing import Any, Awaitable, Callable, TypeVar, Union
 from uuid import UUID
 
 from fast_depends import inject
 from pydantic import BaseModel
+from async_tools import asyncify
+from asyncio_throttle import Throttler
 
 from aioclock.app import AioClock
 from aioclock.exceptions import TaskIdNotFound
@@ -31,7 +21,6 @@ else:
 T = TypeVar("T")
 P = ParamSpec("P")
 
-
 class TaskMetadata(BaseModel):
     """Metadata of the task that is included in the AioClock instance.
 
@@ -43,23 +32,23 @@ class TaskMetadata(BaseModel):
     """
 
     id: UUID
-
     trigger: Union[TriggerT, Any]
-
     task_name: str
 
-
-async def run_specific_task(task_id: UUID, app: AioClock):
+async def run_specific_task(task_id: UUID, app: AioClock, throttle: Throttler = None):
     """Run a specific task immediately by its ID, from the AioClock instance.
 
-    params:
-        task_id: Task ID that is unique for each task, and changes every time you run the aioclock app.
-            In future we might store task ID in a database, so that it always remains same.
-        app: AioClock instance to run the task from.
+    Parameters:
+        task_id (UUID): The ID of the task to run.
+        app (AioClock): The AioClock instance containing the tasks.
+        throttle (Throttler, optional): A Throttler instance to limit the capacity of running tasks.
+
+    Raises:
+        TaskIdNotFound: If the task ID is not found in the AioClock instance.
 
     Example:
-        ```python
-        from aioclock import  AioClock, Once
+        
+        from aioclock import AioClock, Once
         from aioclock.api import run_specific_task
 
         app = AioClock()
@@ -70,25 +59,28 @@ async def run_specific_task(task_id: UUID, app: AioClock):
 
         async def some_other_func():
             await run_specific_task(app._tasks[0].id, app)
-        ```
-
+        
     """
     task = next((task for task in app._tasks if task.id == task_id), None)
     if not task:
         raise TaskIdNotFound
-    return await run_with_injected_deps(task.func)
 
+    if throttle:
+        await throttle.acquire()
+
+    return await asyncify(run_with_injected_deps)(task.func)
 
 async def run_with_injected_deps(func: Callable[P, Awaitable[T]]) -> T:
     """Runs an aioclock decorated function, with all the dependencies injected.
 
-    Can be used to run a task function with all the dependencies injected.
+    Parameters:
+        func (Callable[P, Awaitable[T]]): The function to run with injected dependencies.
 
-    params:
-        func: Function to run with all the dependencies injected. Must be decorated with `@app.task` decorator.
+    Returns:
+        T: The result of the function.
 
     Example:
-        ```python
+        
         from aioclock import Once, AioClock, Depends
         from aioclock.api import run_with_injected_deps
 
@@ -105,24 +97,21 @@ async def run_with_injected_deps(func: Callable[P, Awaitable[T]]) -> T:
         async def some_other_func():
             foo = await run_with_injected_deps(main)
             assert foo == 1
-        ```
-
+        
     """
     return await inject(func, dependency_overrides_provider=get_provider())()  # type: ignore
-
 
 async def get_metadata_of_all_tasks(app: AioClock) -> list[TaskMetadata]:
     """Get metadata of all tasks that are included in the AioClock instance.
 
-    This function can be used to mutate the `TaskMetadata` object, i.e to change the trigger of a task.
-    But for now it is yet not recommended to do this, as you might experience some unexpected behavior.
-    But in next versions, I'd like to make it more stable and reliable on mutating the data.
+    Parameters:
+        app (AioClock): The AioClock instance containing the tasks.
 
-    params:
-        app: AioClock instance to get the metadata of all tasks.
+    Returns:
+        list[TaskMetadata]: A list of TaskMetadata objects representing the tasks in the AioClock instance.
 
     Example:
-        ```python
+        
         from aioclock import AioClock, Once
         from aioclock.api import get_metadata_of_all_tasks
 
@@ -132,7 +121,7 @@ async def get_metadata_of_all_tasks(app: AioClock) -> list[TaskMetadata]:
 
         async def some_other_func():
             metadata = await get_metadata_of_all_tasks(app)
-        ```
+        
     """
     return [
         TaskMetadata(
