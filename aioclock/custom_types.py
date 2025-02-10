@@ -24,8 +24,6 @@ PositiveNumber = Annotated[Union[int, float], Interval(ge=0)]
 
 
 class Triggers(StrEnum):
-    EVERY = auto()
-    """Every (x) time units, it gets triggered."""
     ONCE = auto()
     """Trigger once, then stop."""
     FOREVER = auto()
@@ -36,5 +34,7 @@ class Triggers(StrEnum):
     """Trigger on application shut down."""
     AT = auto()
     """Trigger at a specific time."""
+    EVERY = auto()
+    """Every (x) time units, it gets triggered."""
     CRON = auto()
     """Cron job trigger."""
