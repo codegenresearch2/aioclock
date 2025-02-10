@@ -1,7 +1,6 @@
 import asyncio
 import threading
 from time import sleep
-from typing import Annotated
 
 from aioclock import AioClock, Depends, Every, Group, OnShutDown, OnStartUp
 
@@ -9,36 +8,36 @@ from aioclock import AioClock, Depends, Every, Group, OnShutDown, OnStartUp
 group = Group()
 
 def dependency():
-    return "Hello, world!"
+    return f"Hello, world! from thread {threading.current_thread().ident}"
 
 def sync_dependency():
     sleep(1)
     return dependency()
 
 @group.task(trigger=Every(seconds=2), metadata={'mutable': False})
-def sync_task_1(val: Annotated[str, Depends(sync_dependency)]):
-    print(f"Synchronous task 1 running in thread {threading.current_thread().ident}: {val}")
+def sync_task_1(val: str = Depends(sync_dependency)):
+    print(f"Sync task 1 running in thread {threading.current_thread().ident}: {val}")
 
 @group.task(trigger=Every(seconds=2.01), metadata={'mutable': False})
-def sync_task_2(val: Annotated[str, Depends(sync_dependency)]):
+def sync_task_2(val: str = Depends(sync_dependency)):
     sleep(1)
-    print(f"Synchronous task 2 running in thread {threading.current_thread().ident}: {val}")
+    print(f"Sync task 2 running in thread {threading.current_thread().ident}: {val}")
 
 # app.py
 app = AioClock()
 app.include_group(group)
 
 @app.task(trigger=OnStartUp(), metadata={'mutable': False})
-def startup():
-    print("Startup task running: Welcome!")
+def startup(val: str = Depends(sync_dependency)):
+    print(f"Startup task running: Welcome! {val}")
 
 @app.task(trigger=OnShutDown(), metadata={'mutable': False})
-def shutdown():
-    print("Shutdown task running: Bye!")
+def shutdown(val: str = Depends(sync_dependency)):
+    print(f"Shutdown task running: Bye! {val}")
 
 @app.task(trigger=Every(seconds=1), metadata={'mutable': False})
-async def async_task(val: Annotated[str, Depends(sync_dependency)]):
-    print(f"Asynchronous task running in thread {threading.current_thread().ident}: {val}")
+async def async_task(val: str = Depends(sync_dependency)):
+    print(f"Async task running in thread {threading.current_thread().ident}: {val}")
 
 if __name__ == "__main__":
     asyncio.run(app.serve())
