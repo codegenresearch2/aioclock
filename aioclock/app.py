@@ -27,6 +27,11 @@ class AioClock:
         self._app_tasks: list[Task] = []
         self._limiter = limiter
 
+    @property
+    def dependencies(self):
+        """Dependencies provider that will be used to inject dependencies in tasks."""
+        return get_provider()
+
     def include_group(self, group: 'Group') -> None:
         """
         Include a group of tasks that will be run by AioClock.
@@ -85,10 +90,12 @@ class AioClock:
         result = flatten_chain([group._tasks for group in self._groups])
         return result
 
-    def _get_shutdown_task(self) -> list[Task]:
+    @property
+    def _shutdown_tasks(self) -> list[Task]:
         return [task for task in self._tasks if task.trigger.type_ == Triggers.ON_SHUT_DOWN]
 
-    def _get_startup_task(self) -> list[Task]:
+    @property
+    def _startup_tasks(self) -> list[Task]:
         return [task for task in self._tasks if task.trigger.type_ == Triggers.ON_START_UP]
 
     def _get_tasks(self, exclude_type: set[Triggers] = None) -> list[Task]:
