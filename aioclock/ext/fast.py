@@ -1,16 +1,8 @@
-"""FastAPI extension to manage the tasks of the AioClock instance in HTTP Layer.
-
-Use cases:
-    - Expose the tasks of the AioClock instance in an HTTP API.
-    - Show to your client which task is going to be run next, and at which time.
-    - Run a specific task from an HTTP API immidiately if needed.
-
-To use FastAPI Extension, please make sure you do `pip install aioclock[fastapi]`.
-
-"""
-
+import asyncio
+import threading
 from typing import Union
 from uuid import UUID
+from concurrent.futures import ThreadPoolExecutor
 
 from aioclock.api import TaskMetadata, get_metadata_of_all_tasks, run_specific_task
 from aioclock.app import AioClock
@@ -24,18 +16,15 @@ except ImportError:
         "You need to install fastapi to use aioclock with FastAPI. Please run `pip install aioclock[fastapi]`"
     )
 
+# Define a thread pool executor for synchronous tasks
+thread_pool = ThreadPoolExecutor(max_workers=10)
 
 def make_fastapi_router(aioclock: AioClock, router: Union[APIRouter, None] = None):
     """Make a FastAPI router that exposes the tasks of the AioClock instance and its external python API in HTTP Layer.
-    You can pass a router to this function, and have dependencies injected in the router, or any authorization logic that you want to have.
-
-
-    params:
-        aioclock: AioClock instance to get the tasks from.
-        router: FastAPI router to add the routes to. If not provided, a new router will be created.
+    This function supports synchronous tasks with threading and implements capacity limiting for task execution.
 
     Example:
-        ```python
+        
         import asyncio
         from contextlib import asynccontextmanager
 
@@ -48,13 +37,12 @@ def make_fastapi_router(aioclock: AioClock, router: Union[APIRouter, None] = Non
         clock_app = AioClock()
 
         @clock_app.task(trigger=OnStartUp())
-        async def startup():
+        def startup():
             print("Starting...")
 
         @clock_app.task(trigger=Every(seconds=3600))
-        async def foo():
+        def foo():
             print("Foo is processing...")
-
 
         @asynccontextmanager
         async def lifespan(app: FastAPI):
@@ -67,25 +55,48 @@ def make_fastapi_router(aioclock: AioClock, router: Union[APIRouter, None] = Non
             except asyncio.CancelledError:
                 ...
 
-
         app = FastAPI(lifespan=lifespan)
         app.include_router(make_fastapi_router(clock_app))
 
         if __name__ == "__main__":
             import uvicorn
             # uvicorn.run(app)
-        ```
+        
     """
     router = router or APIRouter()
 
     @router.get("/tasks")
     async def get_tasks() -> list[TaskMetadata]:
+        """
+        Get metadata of all tasks that are included in the AioClock instance.
+
+        Returns:
+            list[TaskMetadata]: List of task metadata objects.
+        """
         return await get_metadata_of_all_tasks(aioclock)
 
     @router.post("/task/{task_id}")
     async def run_task(task_id: UUID):
+        """
+        Run a specific task immediately by its ID, from the AioClock instance.
+
+        Args:
+            task_id (UUID): Task ID that is unique for each task.
+
+        Raises:
+            HTTPException: If the task ID is not found.
+        """
         try:
-            await run_specific_task(task_id, aioclock)
+            task = next((task for task in aioclock._tasks if task.id == task_id), None)
+            if not task:
+                raise TaskIdNotFound
+
+            # Check if the task is synchronous and run it in a thread pool
+            if asyncio.iscoroutinefunction(task.func):
+                await run_specific_task(task_id, aioclock)
+            else:
+                loop = asyncio.get_running_loop()
+                await loop.run_in_executor(thread_pool, task.func)
         except TaskIdNotFound:
             raise HTTPException(status_code=404, detail="Task not found")
 
