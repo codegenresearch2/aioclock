@@ -99,7 +99,7 @@ class AioClock:
                 if asyncify(func) is not func:
                     # If the function is synchronous, run it in a thread pool
                     loop = asyncio.get_running_loop()
-                    result = await loop.run_in_executor(None, func, *args, **kwargs)
+                    result = await loop.run_in_executor(None, func, *args)
                     return result
                 else:
                     # If the function is already asynchronous, run it directly
