@@ -10,6 +10,7 @@ else:
 
 from fast_depends import inject
 from asyncer import asyncify
+from anyio import CapacityLimiter
 
 from aioclock.provider import get_provider
 from aioclock.task import Task
@@ -20,20 +21,15 @@ P = ParamSpec("P")
 
 
 class Group:
-    def __init__(self, *, tasks: Union[list[Task], None] = None, limiter=None):
+    def __init__(self):
         """
         Group of tasks that will be run together.
 
         Best use case is to have a good modularity and separation of concerns.
         For example, you can have a group of tasks that are responsible for sending emails.
         And another group of tasks that are responsible for sending notifications.
-
-        Args:
-            tasks (list[Task], optional): List of tasks to initialize the group with. Defaults to None.
-            limiter: Optional limiter object to limit the number of concurrent tasks.
         """
-        self._tasks: list[Task] = tasks or []
-        self._limiter = limiter
+        self._tasks: list[Task] = []
 
     def task(self, *, trigger: BaseTrigger):
         """Function used to decorate tasks, to be registered inside AioClock.
@@ -62,18 +58,15 @@ class Group:
 
         return decorator
 
-    async def _run(self):
+    async def _run(self, limiter: CapacityLimiter):
         """
         Just for purpose of being able to run all task in group
         Private method, should not be used outside of the library
+
+        Args:
+            limiter (CapacityLimiter): Limiter object to limit the number of concurrent tasks.
         """
-        if self._limiter:
-            async with self._limiter:
-                await asyncio.gather(
-                    *(task.run() for task in self._tasks),
-                    return_exceptions=False,
-                )
-        else:
+        async with limiter:
             await asyncio.gather(
                 *(task.run() for task in self._tasks),
                 return_exceptions=False,
