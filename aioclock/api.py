@@ -27,8 +27,9 @@ class TaskMetadata(BaseModel):
     Metadata of the task that is included in the AioClock instance.
 
     Attributes:
-        id (UUID): Task ID that is unique for each task, and changes every time you run the aioclock app.
-        trigger (Union[TriggerT, Any]): Trigger that is used to run the task, type is also any to ease implementing new triggers.
+        id (UUID): Task ID that is unique for each task. Changes every time the aioclock app is run.
+            In the future, task IDs may be stored in a database to persist across runs.
+        trigger (Union[TriggerT, Any]): Trigger that is used to run the task. Type is any to accommodate custom triggers.
         task_name (str): Name of the task function.
     """
 
@@ -49,6 +50,24 @@ async def run_specific_task(task_id: UUID, app: AioClock):
 
     Returns:
         The result of the task function.
+
+    Example:
+        
+        from aioclock import AioClock, Once
+        from aioclock.api import run_specific_task
+
+        app = AioClock()
+
+        @app.task(trigger=Once())
+        async def main():
+            print("Hello World")
+
+        async def some_other_func():
+            await run_specific_task(app._tasks[0].id, app)
+        
+
+    Note:
+        Changes made to the AioClock instance's state are not persisted, as the state is currently stored in memory.
     """
 
     async with TASK_SEMAPHORE:
@@ -66,6 +85,29 @@ async def run_with_injected_deps(func: Callable[P, Awaitable[T]]) -> T:
 
     Returns:
         The result of the function.
+
+    Example:
+        
+        from aioclock import Once, AioClock, Depends
+        from aioclock.api import run_with_injected_deps
+
+        app = AioClock()
+
+        def some_dependency():
+            return 1
+
+        @app.task(trigger=Once())
+        async def main(bar: int = Depends(some_dependency)):
+            print("Hello World")
+            return bar
+
+        async def some_other_func():
+            foo = await run_with_injected_deps(main)
+            assert foo == 1
+        
+
+    Note:
+        Changes made to the AioClock instance's state are not persisted, as the state is currently stored in memory.
     """
 
     async with TASK_SEMAPHORE:
@@ -80,6 +122,19 @@ async def get_metadata_of_all_tasks(app: AioClock) -> list[TaskMetadata]:
 
     Returns:
         A list of TaskMetadata objects for all tasks in the AioClock instance.
+
+    Example:
+        
+        from aioclock import AioClock, Once
+        from aioclock.api import get_metadata_of_all_tasks
+
+        app = AioClock()
+        @app.task(trigger=Once())
+        async def main(): ...
+
+        async def some_other_func():
+            metadata = await get_metadata_of_all_tasks(app)
+        
     """
 
     return [
