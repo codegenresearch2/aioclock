@@ -4,30 +4,34 @@ import pytest
 import zoneinfo
 from aioclock.triggers import Cron
 
-async def test_cron_trigger():
+async def test_cron_trigger_valid_expression():
     # Test for a valid cron expression
     trigger = Cron(cron="0 12 * * *", tz="UTC")
     now = datetime.now(tz=zoneinfo.ZoneInfo("UTC"))
     next_trigger_time = await trigger.get_waiting_time_till_next_trigger()
     assert next_trigger_time > 0
 
+async def test_cron_trigger_invalid_expression():
     # Test for an invalid cron expression
     with pytest.raises(ValueError):
         trigger = Cron(cron="invalid", tz="UTC")
         await trigger.get_waiting_time_till_next_trigger()
 
+async def test_cron_trigger_immediate_trigger():
     # Test for immediate trigger
     trigger = Cron(cron="* * * * *", tz="UTC")
     now = datetime.now(tz=zoneinfo.ZoneInfo("UTC"))
     next_trigger_time = await trigger.get_waiting_time_till_next_trigger()
     assert next_trigger_time == 0
 
+async def test_cron_trigger_future_trigger():
     # Test for future trigger
     trigger = Cron(cron="0 0 * * *", tz="UTC")  # Trigger at midnight every day
     now = datetime.now(tz=zoneinfo.ZoneInfo("UTC"))
     next_trigger_time = await trigger.get_waiting_time_till_next_trigger()
     assert next_trigger_time > 0 and next_trigger_time < 86400  # Less than one day in seconds
 
+async def test_cron_trigger_specific_time_trigger():
     # Test for specific time trigger
     trigger = Cron(cron="0 14 * * *", tz="UTC")  # Trigger at 2 PM every day
     target_time = datetime(2024, 3, 31, 14, 0, 0, tzinfo=zoneinfo.ZoneInfo("UTC"))
