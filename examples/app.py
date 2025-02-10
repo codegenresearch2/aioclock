@@ -1,53 +1,40 @@
 import asyncio
-import threading
-from time import sleep
-from typing import Annotated
+from concurrent.futures import ThreadPoolExecutor
 
 from aioclock import AioClock, Depends, Every, Group, OnShutDown, OnStartUp
 
 # service1.py
-group = Group()
-
+group = Group(capacity=10)  # Added capacity limiter parameter
 
 def dependency():
-    return "Hello from thread: "
+    return "Hello, world!"
 
+def sync_dependency():
+    return dependency()
 
-@group.task(trigger=Every(seconds=2))
-def sync_task_1(val: str = Depends(dependency)):
-    print(f"{val} `sync_task_1` {threading.current_thread().ident}")
-    sleep(1)  # some blocking operation
+executor = ThreadPoolExecutor(max_workers=5)  # Create a thread pool
 
-
-@group.task(trigger=Every(seconds=2.01))
-def sync_task_2(val: Annotated[str, Depends(dependency)]):
-    print(f"{val} `sync_task_2` {threading.current_thread().ident}")
-    sleep(1)  # some blocking operation
-    return "3"
-
-
-print(sync_task_2("Aioclock won't color your functions! "))
-
-
-@group.task(trigger=Every(seconds=2))
-async def async_task(val: str = Depends(dependency)):
-    print(f"{val} `async_task` {threading.current_thread().ident}")
-
+@group.task(trigger=Every(seconds=1), metadata={'mutable': False})  # Clarified mutability warning for task metadata
+async def my_task(val: str = Depends(sync_dependency)):
+    loop = asyncio.get_running_loop()
+    result = await loop.run_in_executor(executor, val)  # Use thread pool to handle sync function
+    print(result)
 
 # app.py
 app = AioClock()
 app.include_group(group)
 
+@app.task(trigger=OnStartUp(), metadata={'mutable': False})  # Clarified mutability warning for task metadata
+async def startup(val: str = Depends(sync_dependency)):
+    loop = asyncio.get_running_loop()
+    result = await loop.run_in_executor(executor, val)  # Use thread pool to handle sync function
+    print("Welcome!", result)
 
-@app.task(trigger=OnStartUp())
-def startup(val: str = Depends(dependency)):
-    print("Welcome!")
-
-
-@app.task(trigger=OnShutDown())
-def shutdown(val: str = Depends(dependency)):
-    print("Bye!")
-
+@app.task(trigger=OnShutDown(), metadata={'mutable': False})  # Clarified mutability warning for task metadata
+async def shutdown(val: str = Depends(sync_dependency)):
+    loop = asyncio.get_running_loop()
+    result = await loop.run_in_executor(executor, val)  # Use thread pool to handle sync function
+    print("Bye!", result)
 
 if __name__ == "__main__":
     asyncio.run(app.serve())
