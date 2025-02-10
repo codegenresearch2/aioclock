@@ -1,10 +1,3 @@
-"""
-To initialize the AioClock instance, you need to import the AioClock class from the aioclock module.
-AioClock class represents the aioclock, and handles the tasks and groups that will be run by the aioclock.
-
-Another way to modularize your code is to use `Group`, which is similar to a router in web frameworks.
-"""
-
 import asyncio
 import sys
 from functools import wraps
@@ -16,6 +9,7 @@ else:
     from typing import ParamSpec
 
 from fast_depends import inject
+from asyncer import asyncify
 
 from aioclock.custom_types import Triggers
 from aioclock.group import Group, Task
@@ -32,37 +26,31 @@ class AioClock:
     AioClock is the main class that will be used to run the tasks.
     It will be responsible for running the tasks in the right order.
 
-    Example:
-        
-        from aioclock import AioClock, Once
-        app = AioClock()
-
-        @app.task(trigger=Once())
-        async def main():
-            print("Hello World")
-        
-
-    To run the AioClock app, simply do:
-
-    Example:
+    Examples:
         
         from aioclock import AioClock, Once
         import asyncio
 
         app = AioClock()
 
-        # whatever comes next
+        @app.task(trigger=Once())
+        async def main():
+            print("Hello World")
+
         asyncio.run(app.serve())
         
     """
 
-    def __init__(self):
+    def __init__(self, limiter: Any = None):
         """
         Initialize AioClock instance.
-        No parameters are needed.
+
+        Args:
+            limiter (Any): An optional limiter object to control the rate of task execution.
         """
         self._groups: list[Group] = []
         self._app_tasks: list[Task] = []
+        self.limiter = limiter
 
     _groups: list[Group]
     """List of groups that will be run by AioClock."""
@@ -80,38 +68,17 @@ class AioClock:
     ) -> None:
         """Override a dependency with a new one.
 
-        Example:
-            
-            from aioclock import AioClock
-
-            def original_dependency():
-                return 1
-
-            def new_dependency():
-                return 2
-
-            app = AioClock()
-            app.override_dependencies(original=original_dependency, override=new_dependency)
-            
+        Args:
+            original (Callable[..., Any]): The original dependency function.
+            override (Callable[..., Any]): The overriding dependency function.
         """
         self.dependencies.override(original, override)
 
     def include_group(self, group: Group) -> None:
         """Include a group of tasks that will be run by AioClock.
 
-        Example:
-            
-            from aioclock import AioClock, Group, Once
-
-            app = AioClock()
-
-            group = Group()
-            @group.task(trigger=Once())
-            async def main():
-                print("Hello World")
-
-            app.include_group(group)
-            
+        Args:
+            group (Group): The group of tasks to include.
         """
         self._groups.append(group)
         return None
@@ -119,22 +86,24 @@ class AioClock:
     def task(self, *, trigger: BaseTrigger):
         """Decorator to add a task to the AioClock instance.
 
-        Example:
-            
-            from aioclock import AioClock, Once
+        Args:
+            trigger (BaseTrigger): The trigger that determines when the task should run.
 
-            app = AioClock()
-
-            @app.task(trigger=Once())
-            async def main():
-                print("Hello World")
-            
+        Returns:
+            Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]]: The decorated function.
         """
 
         def decorator(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
             @wraps(func)
             async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-                return await func(*args, **kwargs)
+                if asyncify(func) is not func:
+                    # If the function is synchronous, run it in a thread pool
+                    loop = asyncio.get_running_loop()
+                    result = await loop.run_in_executor(None, func, *args, **kwargs)
+                    return result
+                else:
+                    # If the function is already asynchronous, run it directly
+                    return await func(*args, **kwargs)
 
             self._app_tasks.append(
                 Task(
