@@ -13,20 +13,21 @@ def dependency():
 
 
 @group.task(trigger=Every(seconds=3))
-def sync_task_1():
-    print("Sync task 1 executed by thread {}".format(threading.current_thread().ident))
+def sync_task_1(val: str = Depends(dependency)):
+    print(f"Sync task 1 executed by thread {threading.current_thread().ident}: {val}")
+    time.sleep(1)  # Simulate blocking operation
     return "Sync task 1 completed"
 
 
 @group.task(trigger=Every(seconds=3))
-def sync_task_2():
-    print("Sync task 2 executed by thread {}".format(threading.current_thread().ident))
+def sync_task_2(val: str = Depends(dependency)):
+    print(f"Sync task 2 executed by thread {threading.current_thread().ident}: {val}")
     return "Sync task 2 completed"
 
 
 @group.task(trigger=Every(seconds=2.01))
-async def async_task():
-    print("Async task executed by thread {}".format(threading.current_thread().ident))
+async def async_task(val: str = Depends(dependency)):
+    print(f"Async task executed by thread {threading.current_thread().ident}: {val}")
 
 
 # app.py
@@ -35,14 +36,14 @@ app.include_group(group)
 
 
 @app.task(trigger=OnStartUp())
-def startup():
-    print("Startup executed by thread {}".format(threading.current_thread().ident))
+def startup(val: str = Depends(dependency)):
+    print(f"Startup executed by thread {threading.current_thread().ident}: {val}")
     return "Startup completed"
 
 
 @app.task(trigger=OnShutDown())
-def shutdown():
-    print("Shutdown executed by thread {}".format(threading.current_thread().ident))
+def shutdown(val: str = Depends(dependency)):
+    print(f"Shutdown executed by thread {threading.current_thread().ident}: {val}")
     return "Shutdown completed"
 
 
