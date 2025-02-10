@@ -2,7 +2,7 @@
 Triggers are used to determine when the event should be triggered. It can be based on time, or some other condition.
 You can create custom triggers by inheriting from `BaseTrigger` class.
 
-!!! info "Don't run CPU intensive or thread-block IO task "
+!!! info "Don't run CPU intensive or thread-block IO task"
     AioClock's triggers are all running in async, only on one CPU.
     So, if you run a CPU intensive task, or a task that blocks the thread, then it will block the entire event loop.
     If you have a sync IO task, then it's recommended to use `run_in_executor` to run the task in a separate thread.
