@@ -21,7 +21,7 @@ P = ParamSpec("P")
 
 
 class Group:
-    def __init__(self, *, tasks: Union[list[Task], None] = None, limiter: Optional[anyio.CapacityLimiter] = None):
+    def __init__(self, limiter: Optional[anyio.CapacityLimiter] = None):
         """
         Group of tasks that will be run together.
 
@@ -30,10 +30,9 @@ class Group:
         And another group of tasks that are responsible for sending notifications.
 
         Args:
-            tasks (Union[list[Task], None]): Optional list of tasks to initialize the group with.
             limiter (Optional[anyio.CapacityLimiter]): Optional limiter to limit the number of concurrent tasks.
         """
-        self._tasks: list[Task] = tasks or []
+        self._tasks: list[Task] = []
         self._limiter = limiter
 
     def task(self, *, trigger: BaseTrigger):
