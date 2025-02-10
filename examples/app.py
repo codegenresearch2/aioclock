@@ -18,7 +18,7 @@ def sync_task_1(val: Annotated[str, Depends(dependency)] = "Default Value"):
     time.sleep(1)
 
 @group.task(trigger=Every(seconds=2.01))
-def sync_task_2(val: Annotated[str, Depends(dependency)] = "Default Value"):
+def sync_task_2(val: Annotated[str, Depends(dependency)]):
     """A synchronous task that prints a value from a dependency function and returns a value."""
     print(f"Sync Task 2 - {val}")
     time.sleep(1)
@@ -37,12 +37,12 @@ app.include_group(group)
 @app.task(trigger=OnStartUp())
 def startup_task(val: Annotated[str, Depends(dependency)] = "Default Value"):
     """A synchronous task that prints a welcome message when the application starts up."""
-    print(f"Startup Task - {val}")
+    print(f"Startup - {val}")
 
 @app.task(trigger=OnShutDown())
 def shutdown_task(val: Annotated[str, Depends(dependency)] = "Default Value"):
     """A synchronous task that prints a goodbye message when the application shuts down."""
-    print(f"Shutdown Task - {val}")
+    print(f"Shutdown - {val}")
 
 if __name__ == "__main__":
     asyncio.run(app.serve())
