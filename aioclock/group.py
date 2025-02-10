@@ -1,7 +1,7 @@
 import asyncio
 import sys
 from functools import wraps
-from typing import Awaitable, Callable, TypeVar, Union
+from typing import Awaitable, Callable, TypeVar, Union, Optional
 
 if sys.version_info < (3, 10):
     from typing_extensions import ParamSpec
@@ -10,6 +10,7 @@ else:
 
 from fast_depends import inject
 from asyncer import asyncify
+import anyio
 
 from aioclock.provider import get_provider
 from aioclock.task import Task
@@ -20,7 +21,7 @@ P = ParamSpec("P")
 
 
 class Group:
-    def __init__(self, *, tasks: Union[list[Task], None] = None, limiter=None):
+    def __init__(self, *, tasks: Union[list[Task], None] = None, limiter: Optional[anyio.CapacityLimiter] = None):
         """
         Group of tasks that will be run together.
 
@@ -30,7 +31,7 @@ class Group:
 
         Args:
             tasks (Union[list[Task], None]): Optional list of tasks to initialize the group with.
-            limiter: Optional limiter to limit the number of concurrent tasks.
+            limiter (Optional[anyio.CapacityLimiter]): Optional limiter to limit the number of concurrent tasks.
         """
         self._tasks: list[Task] = tasks or []
         self._limiter = limiter
