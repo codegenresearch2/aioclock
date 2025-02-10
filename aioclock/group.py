@@ -55,7 +55,7 @@ class Group:
                 trigger=trigger,
             )
             self._tasks.append(task)
-            return wrapped_function
+            return func
 
         return decorator
 
