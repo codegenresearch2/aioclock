@@ -448,7 +448,7 @@ TriggerT = Annotated[
 
 
 ### Explanation of Changes:
-1. **Removed Invalid Syntax**: The line causing the `SyntaxError` was removed from the docstring.
+1. **Removed Invalid Syntax**: The problematic line in the docstring of the `BaseTrigger` class was removed to ensure valid Python syntax.
 2. **Ensured Documentation Consistency**: Updated the documentation comments to ensure consistency in style and formatting.
 3. **Corrected Spelling and Grammar**: Reviewed the code for any spelling or grammatical errors and corrected them.
 4. **Example Formatting**: Ensured that the examples provided in the docstrings are formatted correctly.
