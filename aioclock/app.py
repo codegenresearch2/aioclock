@@ -1,5 +1,4 @@
 import asyncio
-import threading
 from typing import Callable, TypeVar, ParamSpec
 from functools import wraps
 
@@ -16,13 +15,16 @@ class AioClock:
         _app_tasks (list[Task]): List of tasks that will be run by AioClock.
     """
 
-    def __init__(self):
+    def __init__(self, limiter: 'anyio.CapacityLimiter' = None):
         """
         Initialize AioClock instance.
-        No parameters are needed.
+
+        Args:
+            limiter (anyio.CapacityLimiter, optional): The capacity limiter for task execution. Defaults to None.
         """
         self._groups: list[Group] = []
         self._app_tasks: list[Task] = []
+        self._limiter = limiter
 
     @property
     def dependencies(self):
