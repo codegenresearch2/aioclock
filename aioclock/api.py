@@ -38,12 +38,12 @@ class TaskMetadata(BaseModel):
     Attributes:
         id (UUID): Task ID that is unique for each task, and changes every time you run the aioclock app.
             In future we might store task ID in a database, so that it always remains same.
-        trigger (Union[TriggerT, Any]): Trigger that is used to run the task, type is also any to ease implementing new triggers.
+        trigger (TriggerT): Trigger that is used to run the task.
         task_name (str): Name of the task function.
     """
 
     id: UUID
-    trigger: Union[TriggerT, Any]
+    trigger: TriggerT
     task_name: str
 
 
