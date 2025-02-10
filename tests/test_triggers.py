@@ -117,11 +117,15 @@ async def test_every():
 
 @pytest.mark.asyncio
 async def test_cron():
+    # Test with a valid cron expression
     trigger = Cron(cron="0 12 * * *", tz="Asia/Kolkata")
     assert await trigger.get_waiting_time_till_next_trigger() == 0
     await trigger.trigger_next()
     assert await trigger.get_waiting_time_till_next_trigger() == 82800  # 23 hours
 
+    # Test with an invalid cron expression to raise ValueError
+    with pytest.raises(ValueError):
+        trigger = Cron(cron="invalid cron expression", tz="Asia/Kolkata")
 
 
-This updated code snippet includes the necessary import for `Cron`, adds a test case for the `Cron` trigger, and ensures that all assertions and comments are consistent with the expected gold code.
+This updated code snippet includes the necessary imports, adds a test case for the `Cron` trigger with assertions, ensures consistent comments, and includes error handling for invalid cron expressions.
