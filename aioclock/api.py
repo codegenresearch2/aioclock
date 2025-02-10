@@ -59,7 +59,7 @@ async def run_specific_task(task_id: UUID, app: AioClock):
     Raises:
         TaskIdNotFound: If the task with the given ID is not found in the AioClock instance.
 
-    Example:
+    Examples:
         
         from aioclock import AioClock, Once
         from aioclock.api import run_specific_task
@@ -89,7 +89,7 @@ async def run_with_injected_deps(func: Callable[P, Awaitable[T]]) -> T:
     Returns:
         T: The result of the function execution.
 
-    Example:
+    Examples:
         
         from aioclock import Once, AioClock, Depends
         from aioclock.api import run_with_injected_deps
@@ -121,7 +121,10 @@ async def get_metadata_of_all_tasks(app: AioClock) -> list[TaskMetadata]:
     Returns:
         list[TaskMetadata]: A list of TaskMetadata objects containing metadata for all tasks.
 
-    Example:
+    Notes:
+        The `TaskMetadata` objects returned by this function are mutable and can be changed. Use with caution.
+
+    Examples:
         
         from aioclock import AioClock, Once
         from aioclock.api import get_metadata_of_all_tasks
