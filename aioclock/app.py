@@ -1,5 +1,5 @@
 import asyncio
-from typing import Callable, TypeVar, ParamSpec
+from typing import Callable, TypeVar, ParamSpec, Any, Optional
 from functools import wraps
 
 T = TypeVar("T")
@@ -15,7 +15,7 @@ class AioClock:
         _app_tasks (list[Task]): List of tasks that will be run by AioClock.
     """
 
-    def __init__(self, limiter: 'anyio.CapacityLimiter' = None):
+    def __init__(self, limiter: Optional['anyio.CapacityLimiter'] = None):
         """
         Initialize AioClock instance.
 
