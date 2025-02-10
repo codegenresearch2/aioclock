@@ -23,22 +23,22 @@ P = ParamSpec("P")
 class Group:
     def __init__(self, *, limiter: Optional[CapacityLimiter] = None):
         """
-        Group of tasks that will be run together.
+        A group of tasks that will be run together.
 
         Args:
-            limiter (Optional[CapacityLimiter], optional): Limiter object to limit the number of concurrent tasks.
+            limiter (Optional[CapacityLimiter], optional): A limiter to limit the number of concurrent tasks.
         """
         self._tasks: list[Task] = []
         self._limiter = limiter
 
     def task(self, *, trigger: BaseTrigger):
-        """Function used to decorate tasks, to be registered inside AioClock.
+        """Decorate a function to register it as a task in the group.
 
         Args:
-            trigger (BaseTrigger): Trigger that will be used to run the function.
+            trigger (BaseTrigger): The trigger that determines when the task should run.
 
         Returns:
-            Callable[[Callable[P, Union[Awaitable[T], T]]], Callable[P, Union[Awaitable[T], T]]]: Decorator function.
+            Callable[[Callable[P, Union[Awaitable[T], T]]], Callable[P, Union[Awaitable[T], T]]]: The decorated function.
         """
 
         def decorator(func: Callable[P, Union[Awaitable[T], T]]) -> Callable[P, Union[Awaitable[T], T]]:
@@ -60,8 +60,9 @@ class Group:
 
     async def _run(self):
         """
-        Just for purpose of being able to run all task in group
-        Private method, should not be used outside of the library
+        Run all tasks in the group.
+
+        This method is intended for internal use and should not be called directly.
         """
         if self._limiter:
             async with self._limiter:
