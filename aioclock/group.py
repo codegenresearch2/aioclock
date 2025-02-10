@@ -25,10 +25,6 @@ class Group:
         """
         Group of tasks that will be run together.
 
-        Best use case is to have a good modularity and separation of concerns.
-        For example, you can have a group of tasks that are responsible for sending emails.
-        And another group of tasks that are responsible for sending notifications.
-
         Args:
             limiter (Optional[anyio.CapacityLimiter]): Optional limiter to limit the number of concurrent tasks.
         """
@@ -47,7 +43,7 @@ class Group:
 
         def decorator(func: Callable[P, Union[Awaitable[T], T]]) -> Callable[P, Union[Awaitable[T], T]]:
             @wraps(func)
-            async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+            async def wrapped_function(*args: P.args, **kwargs: P.kwargs) -> T:
                 if asyncio.iscoroutinefunction(func):
                     result = await func(*args, **kwargs)
                 else:
@@ -55,11 +51,11 @@ class Group:
                 return result
 
             task = Task(
-                func=inject(wrapper, dependency_overrides_provider=get_provider()),
+                func=inject(wrapped_function, dependency_overrides_provider=get_provider()),
                 trigger=trigger,
             )
             self._tasks.append(task)
-            return wrapper
+            return wrapped_function
 
         return decorator
 
