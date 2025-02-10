@@ -35,7 +35,7 @@ class AioClock:
 
         @app.task(trigger=Once())
         async def main():
-            print("Hello World")
+            return 1
 
         asyncio.run(app.serve())
         
