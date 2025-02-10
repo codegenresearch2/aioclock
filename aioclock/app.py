@@ -1,7 +1,7 @@
 import asyncio
 import sys
 from functools import wraps
-from typing import Any, Awaitable, Callable, TypeVar, Union
+from typing import Any, Awaitable, Callable, TypeVar, Union, Optional
 
 if sys.version_info < (3, 10):
     from typing_extensions import ParamSpec
@@ -41,12 +41,12 @@ class AioClock:
         
     """
 
-    def __init__(self, limiter: Any = None):
+    def __init__(self, limiter: Optional[Any] = None):
         """
         Initialize AioClock instance.
 
         Args:
-            limiter (Any): An optional limiter object to control the rate of task execution.
+            limiter (Optional[Any]): An optional limiter object to control the rate of task execution.
         """
         self._groups: list[Group] = []
         self._app_tasks: list[Task] = []
