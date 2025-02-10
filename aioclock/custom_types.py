@@ -24,6 +24,7 @@ PositiveNumber = Annotated[Union[int, float], Interval(ge=0)]
 
 
 class Triggers(StrEnum):
+    """Enum for different types of triggers."""
     ONCE = auto()
     """Trigger once, then stop."""
     FOREVER = auto()
