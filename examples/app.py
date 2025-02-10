@@ -1,7 +1,6 @@
 import asyncio
 import threading
 import time
-from typing import Annotated
 
 from aioclock import AioClock, Depends, Every, Group, OnShutDown, OnStartUp
 
@@ -10,7 +9,7 @@ group = Group()
 
 
 def dependency():
-    return "Hello, world!"
+    return "Thread context: " + threading.current_thread().name
 
 
 @group.task(trigger=Every(seconds=2.01))
@@ -29,7 +28,7 @@ def sync_task_1(val: str = Depends(blocking_dependency)):
     print(f"Sync task 1 executed by thread {threading.current_thread().ident}: {val}")
 
 
-@group.task(trigger=Every(seconds=4))
+@group.task(trigger=Every(seconds=3))
 def sync_task_2(val: str = Depends(dependency)):
     print(f"Sync task 2 executed by thread {threading.current_thread().ident}: {val}")
 
