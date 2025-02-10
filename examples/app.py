@@ -11,22 +11,22 @@ def dependency():
     return f"Thread ID: {threading.current_thread().ident}"
 
 @group.task(trigger=Every(seconds=2))
-def sync_task_1(val=Depends(dependency)):
+def sync_task_1(val: str = Depends(dependency)):
     """A synchronous task that prints a value from a dependency function."""
-    print(f"Sync Task 1 - {val}")
+    print(f"Sync Task 1 - Thread ID: {val}")
     time.sleep(1)
 
 @group.task(trigger=Every(seconds=2.01))
-def sync_task_2(val=Depends(dependency)):
+def sync_task_2(val: str = Depends(dependency)):
     """A synchronous task that prints a value from a dependency function and returns a value."""
-    print(f"Sync Task 2 - {val}")
+    print(f"Sync Task 2 - Thread ID: {val}")
     time.sleep(1)
     return "Sync Task 2 Completed"
 
 @group.task(trigger=Every(seconds=2.02))
-async def async_task(val=Depends(dependency)):
+async def async_task(val: str = Depends(dependency)):
     """An asynchronous task that prints a value from a dependency function."""
-    print(f"Async Task - {val}")
+    print(f"Async Task - Thread ID: {val}")
     await asyncio.sleep(1)
 
 # app.py
@@ -34,12 +34,12 @@ app = AioClock()
 app.include_group(group)
 
 @app.task(trigger=OnStartUp())
-def startup(val=Depends(dependency)):
+def startup(val: str = Depends(dependency)):
     """A synchronous task that prints a welcome message when the application starts up."""
     print("Welcome!")
 
 @app.task(trigger=OnShutDown())
-def shutdown(val=Depends(dependency)):
+def shutdown(val: str = Depends(dependency)):
     """A synchronous task that prints a goodbye message when the application shuts down."""
     print("Bye!")
 
