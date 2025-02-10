@@ -1,7 +1,7 @@
 import asyncio
 import sys
 from functools import wraps
-from typing import Any, Awaitable, Callable, TypeVar, Union
+from typing import Any, Awaitable, Callable, Optional, TypeVar, Union
 
 if sys.version_info < (3, 10):
     from typing_extensions import ParamSpec
@@ -26,15 +26,15 @@ class AioClock:
     It will be responsible for running the tasks in the right order.
 
     Args:
-        capacity_limiter (int, optional): The maximum number of tasks that can be run concurrently. Defaults to None.
+        capacity_limiter (Optional[anyio.CapacityLimiter], optional): The maximum number of tasks that can be run concurrently. Defaults to None.
     """
 
-    def __init__(self, capacity_limiter: int = None):
+    def __init__(self, capacity_limiter: Optional[anyio.CapacityLimiter] = None):
         """
         Initialize AioClock instance.
 
         Args:
-            capacity_limiter (int, optional): The maximum number of tasks that can be run concurrently. Defaults to None.
+            capacity_limiter (Optional[anyio.CapacityLimiter], optional): The maximum number of tasks that can be run concurrently. Defaults to None.
         """
         self._groups: list[Group] = []
         self._app_tasks: list[Task] = []
