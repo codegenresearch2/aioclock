@@ -12,7 +12,7 @@ Other tools and extension are written from this tool.
 """
 
 import sys
-from typing import Any, Callable, Optional, TypeVar
+from typing import Any, Awaitable, Callable, Optional, TypeVar
 from uuid import UUID
 
 from fast_depends import inject
@@ -37,7 +37,7 @@ class TaskMetadata(BaseModel):
     Attributes:
         id (UUID): Task ID that is unique for each task, and changes every time you run the aioclock app.
             In future we might store task ID in a database, so that it always remains same.
-        trigger (Union[TriggerT, Any]): Trigger that is used to run the task, type is also any to ease implementing new triggers.
+        trigger (TriggerT): Trigger that is used to run the task.
         task_name (str): Name of the task function.
     """
 
@@ -45,7 +45,7 @@ class TaskMetadata(BaseModel):
     trigger: TriggerT
     task_name: str
 
-def run_specific_task(task_id: UUID, app: AioClock):
+async def run_specific_task(task_id: UUID, app: AioClock):
     """Run a specific task immediately by its ID, from the AioClock instance.
 
     Args:
@@ -63,26 +63,26 @@ def run_specific_task(task_id: UUID, app: AioClock):
         app = AioClock()
 
         @app.task(trigger=Once())
-        def main():
+        async def main():
             print("Hello World")
 
-        def some_other_func():
-            run_specific_task(app._tasks[0].id, app)
+        async def some_other_func():
+            await run_specific_task(app._tasks[0].id, app)
         
     """
     task = next((task for task in app._tasks if task.id == task_id), None)
     if not task:
         raise TaskIdNotFound
-    return run_with_injected_deps(task.func)
+    return await run_with_injected_deps(task.func)
 
-def run_with_injected_deps(func: Callable[P, T]) -> T:
+async def run_with_injected_deps(func: Callable[P, Awaitable[T]]) -> T:
     """Runs an aioclock decorated function, with all the dependencies injected.
 
     Args:
-        func (Callable[P, T]): The function to run with injected dependencies.
+        func (Callable[P, Awaitable[T]]): The function to run with injected dependencies.
 
     Returns:
-        T: The result of the function.
+        Awaitable[T]: The result of the function.
 
     Example:
         
@@ -95,18 +95,18 @@ def run_with_injected_deps(func: Callable[P, T]) -> T:
             return 1
 
         @app.task(trigger=Once())
-        def main(bar: int = Depends(some_dependency)):
+        async def main(bar: int = Depends(some_dependency)):
             print("Hello World")
             return bar
 
-        def some_other_func():
-            foo = run_with_injected_deps(main)
+        async def some_other_func():
+            foo = await run_with_injected_deps(main)
             assert foo == 1
         
     """
-    return inject(func, dependency_overrides_provider=get_provider())()  # type: ignore
+    return await inject(func, dependency_overrides_provider=get_provider())()  # type: ignore
 
-def get_metadata_of_all_tasks(app: AioClock) -> list[TaskMetadata]:
+async def get_metadata_of_all_tasks(app: AioClock) -> list[TaskMetadata]:
     """Get metadata of all tasks that are included in the AioClock instance.
 
     Args:
@@ -122,10 +122,10 @@ def get_metadata_of_all_tasks(app: AioClock) -> list[TaskMetadata]:
 
         app = AioClock()
         @app.task(trigger=Once())
-        def main(): ...
+        async def main(): ...
 
-        def some_other_func():
-            metadata = get_metadata_of_all_tasks(app)
+        async def some_other_func():
+            metadata = await get_metadata_of_all_tasks(app)
         
     """
     return [
