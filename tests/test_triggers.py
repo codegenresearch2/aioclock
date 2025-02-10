@@ -1,10 +1,7 @@
 from datetime import datetime
-
 import pytest
 import zoneinfo
-
-from aioclock.triggers import At, Every, Forever, LoopController, Once
-
+from aioclock.triggers import At, Every, Forever, LoopController, Once, Cron
 
 def test_at_trigger():
     # test this sunday
@@ -69,7 +66,6 @@ def test_at_trigger():
     )
     assert val == 518400
 
-
 @pytest.mark.asyncio
 async def test_loop_controller():
     # since once trigger is triggered, it should not trigger again.
@@ -92,7 +88,6 @@ async def test_loop_controller():
 
     assert trigger.should_trigger() is False
 
-
 @pytest.mark.asyncio
 async def test_forever():
     trigger = Forever()
@@ -101,7 +96,6 @@ async def test_forever():
     assert trigger.should_trigger() is True
     await trigger.trigger_next()
     assert trigger.should_trigger() is True
-
 
 @pytest.mark.asyncio
 async def test_every():
@@ -114,3 +108,13 @@ async def test_every():
     assert await trigger.get_waiting_time_till_next_trigger() == 0
     trigger._increment_loop_counter()
     assert await trigger.get_waiting_time_till_next_trigger() == 1
+
+@pytest.mark.asyncio
+async def test_cron():
+    # Test a valid cron trigger
+    trigger = Cron(cron="0 12 * * *", tz="UTC")
+    assert await trigger.trigger_next() is None
+
+    # Test an invalid cron expression
+    with pytest.raises(ValueError):
+        Cron(cron="invalid cron", tz="UTC")
