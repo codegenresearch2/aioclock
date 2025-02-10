@@ -1,53 +1,51 @@
 import asyncio
-import threading
-from time import sleep
-from typing import Annotated
+from typing import Callable, Optional
 
 from aioclock import AioClock, Depends, Every, Group, OnShutDown, OnStartUp
 
 # service1.py
-group = Group()
+def default_dependency() -> str:
+    """Default dependency function that returns a greeting."""
+    return "Hello, world!"
 
+class Service:
+    """Service class that encapsulates tasks and dependencies."""
 
-def dependency():
-    return "Hello from thread: "
+    def __init__(self, dependency: Optional[Callable[[], str]] = None):
+        self.group = Group()
+        self.dependency = dependency or default_dependency
 
-
-@group.task(trigger=Every(seconds=2))
-def sync_task_1(val: str = Depends(dependency)):
-    print(f"{val} `sync_task_1` {threading.current_thread().ident}")
-    sleep(1)  # some blocking operation
-
-
-@group.task(trigger=Every(seconds=2.01))
-def sync_task_2(val: Annotated[str, Depends(dependency)]):
-    print(f"{val} `sync_task_2` {threading.current_thread().ident}")
-    sleep(1)  # some blocking operation
-    return "3"
-
-
-print(sync_task_2("Aioclock won't color your functions! "))
-
-
-@group.task(trigger=Every(seconds=2))
-async def async_task(val: str = Depends(dependency)):
-    print(f"{val} `async_task` {threading.current_thread().ident}")
-
+    @group.task(trigger=Every(seconds=1))
+    async def my_task(self, val: str = Depends(dependency)):
+        """Task that prints the value returned by the dependency function."""
+        print(val)
 
 # app.py
-app = AioClock()
-app.include_group(group)
+class App:
+    """Main application class that manages the service and tasks."""
 
+    def __init__(self, service: Service):
+        self.app = AioClock()
+        self.service = service
+        self.app.include_group(service.group)
 
-@app.task(trigger=OnStartUp())
-def startup(val: str = Depends(dependency)):
-    print("Welcome!")
+    @app.task(trigger=OnStartUp())
+    async def startup(self, val: str = Depends(service.dependency)):
+        """Startup task that prints a welcome message and the value returned by the dependency function."""
+        print("Welcome!")
+        print(val)
 
+    @app.task(trigger=OnShutDown())
+    async def shutdown(self, val: str = Depends(service.dependency)):
+        """Shutdown task that prints a goodbye message and the value returned by the dependency function."""
+        print("Bye!")
+        print(val)
 
-@app.task(trigger=OnShutDown())
-def shutdown(val: str = Depends(dependency)):
-    print("Bye!")
-
+    async def serve(self):
+        """Starts the application."""
+        await self.app.serve()
 
 if __name__ == "__main__":
+    service = Service()
+    app = App(service)
     asyncio.run(app.serve())
