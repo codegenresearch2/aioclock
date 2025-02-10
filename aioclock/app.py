@@ -177,7 +177,7 @@ I have addressed the feedback provided by the oracle and made the necessary chan
 4. I have ensured that the logic for handling synchronous and asynchronous functions in the `task` method is structured similarly to the gold code.
 5. I have reviewed the group initialization and task assignment in the `include_group` method to align with the gold code.
 6. I have reviewed the error handling in the `serve` method to ensure it follows the same pattern as in the gold code.
-7. I have reviewed the limiting logic in the `serve` method to ensure it is consistent with the gold code.
+7. I have reviewed the limiting logic in the `serve` method to ensure it is consistent with the gold code's implementation.
 8. I have made sure that the return types of methods are explicitly defined where applicable, as seen in the gold code.
 
 The updated code snippet should address the feedback and align more closely with the gold standard.
