@@ -9,6 +9,7 @@ else:
     from typing import ParamSpec
 
 from fast_depends import inject
+from anyio import CapacityLimiter
 
 from aioclock.custom_types import Triggers
 from aioclock.group import Group, Task
@@ -26,15 +27,15 @@ class AioClock:
     It will be responsible for running the tasks in the right order.
 
     Args:
-        limiter (Optional[anyio.CapacityLimiter], optional): The maximum number of tasks that can be run concurrently. Defaults to None.
+        limiter (Optional[CapacityLimiter], optional): The maximum number of tasks that can be run concurrently. Defaults to None.
     """
 
-    def __init__(self, limiter: Optional[anyio.CapacityLimiter] = None):
+    def __init__(self, limiter: Optional[CapacityLimiter] = None):
         """
         Initialize AioClock instance.
 
         Args:
-            limiter (Optional[anyio.CapacityLimiter], optional): The maximum number of tasks that can be run concurrently. Defaults to None.
+            limiter (Optional[CapacityLimiter], optional): The maximum number of tasks that can be run concurrently. Defaults to None.
         """
         self._groups: list[Group] = []
         self._app_tasks: list[Task] = []
