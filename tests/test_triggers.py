@@ -27,7 +27,6 @@ async def test_cron_triggers_in_future():
     next_trigger_time = await trigger.get_waiting_time_till_next_trigger()
     assert next_trigger_time > 0 and next_trigger_time < 86400  # Less than one day in seconds
 
-@pytest.mark.asyncio
 async def test_cron_specific_time():
     # Test for a specific cron expression and time
     trigger = Cron(cron="0 14 * * *", tz="UTC")  # Trigger at 2 PM every day
