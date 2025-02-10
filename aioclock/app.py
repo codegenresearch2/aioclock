@@ -26,19 +26,19 @@ class AioClock:
     It will be responsible for running the tasks in the right order.
 
     Args:
-        capacity_limiter (Optional[anyio.CapacityLimiter], optional): The maximum number of tasks that can be run concurrently. Defaults to None.
+        limiter (Optional[anyio.CapacityLimiter], optional): The maximum number of tasks that can be run concurrently. Defaults to None.
     """
 
-    def __init__(self, capacity_limiter: Optional[anyio.CapacityLimiter] = None):
+    def __init__(self, limiter: Optional[anyio.CapacityLimiter] = None):
         """
         Initialize AioClock instance.
 
         Args:
-            capacity_limiter (Optional[anyio.CapacityLimiter], optional): The maximum number of tasks that can be run concurrently. Defaults to None.
+            limiter (Optional[anyio.CapacityLimiter], optional): The maximum number of tasks that can be run concurrently. Defaults to None.
         """
         self._groups: list[Group] = []
         self._app_tasks: list[Task] = []
-        self.capacity_limiter = capacity_limiter
+        self.limiter = limiter
 
     _groups: list[Group] = []
     """List of groups that will be run by AioClock."""
