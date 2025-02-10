@@ -14,19 +14,19 @@ def dependency():
 
 @group.task(trigger=Every(seconds=2))
 async def async_task(val: str = Depends(dependency)):
-    print(f"Async task is running with value: {val}")
+    print(f"Async task ({threading.current_thread().name}) is running with value: {val}")
 
 
 @group.task(trigger=Every(seconds=2.01))
 def sync_task_1(val: Annotated[str, Depends(dependency)]):
-    print(f"Sync task 1 is running with value: {val}")
+    print(f"Sync task 1 ({threading.current_thread().name}) is running with value: {val}")
     sleep(1)  # Simulating a blocking operation
 
 
 @group.task(trigger=Every(seconds=2.02))
 def sync_task_2(val: Annotated[str, Depends(dependency)]):
     result = val  # Simulating a return value
-    print(f"Sync task 2 is running with value: {val}")
+    print(f"Sync task 2 ({threading.current_thread().name}) is running with value: {val}")
     sleep(1)  # Simulating a blocking operation
     return result
 
@@ -38,12 +38,12 @@ app.include_group(group)
 
 @app.task(trigger=OnStartUp())
 def startup(val: Annotated[str, Depends(dependency)]):
-    print(f"Startup: {val}")
+    print(f"Welcome! ({threading.current_thread().name})")
 
 
 @app.task(trigger=OnShutDown())
 def shutdown(val: Annotated[str, Depends(dependency)]):
-    print(f"Shutdown: {val}")
+    print(f"Bye! ({threading.current_thread().name})")
 
 
 if __name__ == "__main__":
