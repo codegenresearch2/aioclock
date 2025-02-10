@@ -1,26 +1,31 @@
 import asyncio
 import threading
-from time import sleep
 from aioclock import AioClock, Depends, Every, Group, OnShutDown, OnStartUp
+from typing import Annotated
 
 # service1.py
 group = Group()
 
 
 def dependency():
-    return "Hello, world!"
+    return f"Hello, world! on thread: {threading.current_thread().ident}"
 
 
 @group.task(trigger=Every(seconds=2))
-async def task_with_dependency(val: str = Depends(dependency)):
-    print(f"Task is running with value: {val} on thread: {threading.get_ident()}")
-    sleep(1)  # Simulating a blocking operation
+async def async_task(val: str = Depends(dependency)):
+    print(f"Async task is running with value: {val}")
 
 
 @group.task(trigger=Every(seconds=2.01))
-def another_task(val: str = Depends(dependency)):
-    print(f"Another task is running with value: {val} on thread: {threading.get_ident()}")
-    sleep(1)  # Simulating a blocking operation
+def sync_task_1(val: Annotated[str, Depends(dependency)]):
+    print(f"Sync task 1 is running with value: {val}")
+
+
+@group.task(trigger=Every(seconds=2.02))
+def sync_task_2(val: Annotated[str, Depends(dependency)]):
+    result = val  # Simulating a return value
+    print(f"Sync task 2 is running with value: {val}")
+    return result
 
 
 # app.py
@@ -29,13 +34,13 @@ app.include_group(group)
 
 
 @app.task(trigger=OnStartUp())
-def startup(val: str = Depends(dependency)):
-    print(f"Welcome! {val} on thread: {threading.get_ident()}")
+def startup(val: Annotated[str, Depends(dependency)]):
+    print(f"Startup: {val}")
 
 
 @app.task(trigger=OnShutDown())
-def shutdown(val: str = Depends(dependency)):
-    print(f"Bye! {val} on thread: {threading.get_ident()}")
+def shutdown(val: Annotated[str, Depends(dependency)]):
+    print(f"Shutdown: {val}")
 
 
 if __name__ == "__main__":
