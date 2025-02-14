@@ -12,7 +12,7 @@ check: ## Run the quality checks on the code
 .PHONY: test
 test: ## Test the code with pytest
 	@echo "🚀 Testing code: Running pytest"
-	rye run pytest
+	rye run pytest -vv
 
 
 .PHONY: docs
