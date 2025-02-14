@@ -2,7 +2,7 @@ from fast_depends import Depends
 
 from aioclock.app import AioClock
 from aioclock.group import Group
-from aioclock.triggers import At, Cron, Every, Forever, Once, OnShutDown, OnStartUp
+from aioclock.triggers import At, Every, Forever, Once, OnShutDown, OnStartUp, Cron
 
 __all__ = [
     "Depends",
@@ -14,7 +14,7 @@ __all__ = [
     "Group",
     "AioClock",
     "At",
-    "Cron",
+    "Cron"
 ]
 
 __version__ = "0.1.1"
