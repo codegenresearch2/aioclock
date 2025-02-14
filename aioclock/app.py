@@ -1,23 +1,14 @@
-"""
-To initialize the AioClock instance, you need to import the AioClock class from the aioclock module.
-AioClock class represent the aioclock, and handle the tasks and groups that will be run by the aioclock.
-
-Another way to modulize your code is to use `Group` which is kinda the same idea as router in web frameworks.
-"""
-
 import asyncio
 import sys
 from functools import wraps
-from typing import Any, Callable, Optional, TypeVar, Union
-
-import anyio
+from typing import Any, Awaitable, Callable, TypeVar, Union
+from concurrent.futures import ThreadPoolExecutor
 
 if sys.version_info < (3, 10):
     from typing_extensions import ParamSpec
 else:
     from typing import ParamSpec
 
-from asyncer import asyncify
 from fast_depends import inject
 
 from aioclock.custom_types import Triggers
@@ -29,53 +20,14 @@ from aioclock.utils import flatten_chain
 T = TypeVar("T")
 P = ParamSpec("P")
 
-
 class AioClock:
-    """
-    AioClock is the main class that will be used to run the tasks.
-    It will be responsible for running the tasks in the right order.
+    """\n    AioClock is the main class that will be used to run the tasks.\n    It will be responsible for running the tasks in the right order.\n    Now it supports synchronous tasks with threading.\n    """
 
-    Example:
-        ```python
-        from aioclock import AioClock, Once
-        app = AioClock()
-
-        @app.task(trigger=Once())
-        async def main():
-            print("Hello World")
-        ```
-
-    To run the aioclock final app simply do:
-
-    Example:
-        ```python
-        from aioclock import AioClock, Once
-        import asyncio
-
-        app = AioClock()
-
-        # whatever next comes here
-        asyncio.run(app.serve())
-        ```
-
-    """
-
-    def __init__(self, limiter: Optional[anyio.CapacityLimiter] = None):
-        """
-        Initialize AioClock instance.
-        No parameters are needed.
-
-        Attributes:
-            limiter:
-                Anyio CapacityLimiter. capacity limiter to use to limit the total amount of threads running
-                Limiter that will be used to limit the number of tasks that are running at the same time.
-                If not provided, it will fallback to the default limiter set on Application level.
-                If no limiter is set on Application level, it will fallback to the default limiter set by AnyIO.
-
-        """
+    def __init__(self):
+        """\n        Initialize AioClock instance.\n        No parameters are needed.\n        """
         self._groups: list[Group] = []
         self._app_tasks: list[Task] = []
-        self._limiter = limiter
+        self._executor = ThreadPoolExecutor()
 
     _groups: list[Group]
     """List of groups that will be run by AioClock."""
@@ -91,103 +43,28 @@ class AioClock:
     def override_dependencies(
         self, original: Callable[..., Any], override: Callable[..., Any]
     ) -> None:
-        """Override a dependency with a new one.
-
-        params:
-            original:
-                Original dependency that will be overridden.
-            override:
-                New dependency that will override the original one.
-
-        Example:
-            ```python
-            from aioclock import AioClock
-
-            def original_dependency():
-                return 1
-
-            def new_dependency():
-                return 2
-
-            app = AioClock()
-            app.override_dependencies(original=original_dependency, override=new_dependency)
-            ```
-
-        """
+        """Override a dependency with a new one."""
         self.dependencies.override(original, override)
 
     def include_group(self, group: Group) -> None:
-        """Include a group of tasks that will be run by AioClock.
-
-        params:
-            group:
-                Group of tasks that will be run together.
-
-        Example:
-            ```python
-            from aioclock import AioClock, Group, Once
-
-            app = AioClock()
-
-            group = Group()
-            @group.task(trigger=Once())
-            async def main():
-                print("Hello World")
-
-            app.include_group(group)
-            ```
-        """
+        """Include a group of tasks that will be run by AioClock."""
         self._groups.append(group)
-        return None
 
     def task(self, *, trigger: BaseTrigger):
-        """
-        Decorator to add a task to the AioClock instance.
-        If decorated function is sync, aioclock will run it in a thread pool executor, using AnyIO.
-        But if you try to run the decorated function, it will run in the same thread, blocking the event loop.
-        It is intended to not change all your `sync functions` to coroutine functions,
-            and they can be used outside of aioclock, if needed.
+        """Decorator to add a task to the AioClock instance."""
 
-        params:
-            trigger: BaseTrigger
-                Trigger that will trigger the task to be running.
-
-        Example:
-            ```python
-
-            from aioclock import AioClock, Once
-
-            app = AioClock()
-
-            @app.task(trigger=Once())
-            async def main():
-                print("Hello World")
-            ```
-        """
-
-        def decorator(func):
+        def decorator(func: Callable[P, T]) -> Callable[P, Awaitable[T]]:
             @wraps(func)
-            async def wrapped_funciton(*args, **kwargs):
-                if asyncio.iscoroutinefunction(func):
-                    return await func(*args, **kwargs)
-                else:  # run in threadpool to make sure it's not blocking the event loop
-                    return await asyncify(func, limiter=self._limiter)(*args, **kwargs)
+            async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+                return await asyncio.get_event_loop().run_in_executor(self._executor, func, *args, **kwargs)
 
             self._app_tasks.append(
                 Task(
-                    func=inject(wrapped_funciton, dependency_overrides_provider=get_provider()),
+                    func=inject(wrapper, dependency_overrides_provider=get_provider()),
                     trigger=trigger,
                 )
             )
-            if asyncio.iscoroutinefunction(func):
-                return wrapped_funciton
-            else:
-
-                @wraps(func)
-                def wrapper(*args, **kwargs):
-                    return func(*args, **kwargs)
-
-                return wrapper
+            return wrapper
 
         return decorator
 
@@ -212,22 +89,37 @@ class AioClock:
         return [task for task in self._tasks if task.trigger.type_ not in exclude_type]
 
     async def serve(self) -> None:
-        """
-        Serves AioClock
-        Run the tasks in the right order.
-        First, run the startup tasks, then run the tasks, and finally run the shutdown tasks.
-        """
-        group = Group()
-        group._tasks = self._app_tasks
-        self.include_group(group)
+        """\n        Serves AioClock\n        Run the tasks in the right order.\n        First, run the startup tasks, then run the tasks, and finally run the shutdown tasks.\n        Now it supports adjustable intervals.\n        """
+
+        self.include_group(Group(tasks=self._app_tasks))
         try:
             await asyncio.gather(
                 *(task.run() for task in self._get_startup_task()), return_exceptions=False
             )
 
             await asyncio.gather(
-                *(group.run() for group in self._get_tasks()), return_exceptions=False
+                *(group.run_with_adjustable_intervals() for group in self._get_tasks()), return_exceptions=False
             )
         finally:
             shutdown_tasks = self._get_shutdown_task()
             await asyncio.gather(*(task.run() for task in shutdown_tasks), return_exceptions=False)
+
+# Added a method to run tasks with adjustable intervals
+@dataclass
+class Group:
+    """Group of tasks that can be run together."""
+
+    tasks: list[Task] = field(default_factory=list)
+
+    async def run_with_adjustable_intervals(self):
+        """Run tasks with adjustable intervals."""
+        tasks_to_run = self.tasks.copy()
+        while tasks_to_run:
+            for task in tasks_to_run:
+                if task.trigger.should_trigger():
+                    next_trigger = await task.trigger.get_waiting_time_till_next_trigger()
+                    if next_trigger is not None:
+                        await asyncio.sleep(next_trigger)
+                    await task.run()
+                else:
+                    tasks_to_run.remove(task)
