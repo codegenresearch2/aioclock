@@ -1,104 +1,23 @@
-"""
-Triggers are used to determine when the event should be triggered. It can be based on time, or some other condition.
-You can create custom triggers by inheriting from `BaseTrigger` class.
-
-!!! info "Don't run CPU intensitve or thread-block IO task "
-    AioClock's trigger are all running in async, only on one CPU.
+"""\nTriggers are used to determine when the event should be triggered. It can be based on time, or some other condition.\nYou can create custom triggers by inheriting from `BaseTrigger` class.\n\n!!! info "Don't run CPU intensitve or thread-block IO task "\n    AioClock's trigger are all running in async, only on one CPU.
     So, if you run a CPU intensive task, or a task that blocks the thread, then it will block the entire event loop.
-    If you have a sync IO task, then it's recommended to use `run_in_executor` to run the task in a separate thread.
-    Or use similiar libraries like `asyncer` or `trio` to run the task in a separate thread.
-"""
-
-import asyncio
-from abc import ABC, abstractmethod
-from copy import deepcopy
-from datetime import datetime, timedelta
-from typing import Annotated, Generic, Literal, TypeVar, Union
-
-import zoneinfo
-from annotated_types import Interval
-from croniter import croniter
-from pydantic import BaseModel, Field, PositiveInt, model_validator
-
-from aioclock.custom_types import EveryT, PositiveNumber, Triggers
-
-TriggerTypeT = TypeVar("TriggerTypeT")
-
-
-class BaseTrigger(BaseModel, ABC, Generic[TriggerTypeT]):
-    """
-    Base class for all triggers.
-    A trigger is a way to determine when the event should be triggered. It can be based on time, or some other condition.
-
-
-    The way trigger are used is as follows:
-        1. An async function which is a task, is decorated with framework, and trigger is the arguement for the decorator
-        2. `get_waiting_time_till_next_trigger` is called to get the time in seconds, after which the event should be triggered.
-        3. If the time is not None, then it logs the time that is predicted for the event to be triggered.
-        4. `trigger_next` is called immidiately after that, which triggers the event.
-
-    You can create trigger by yourself, by inheriting from `BaseTrigger` class.
-
-    Example:
-        ```python
-        from aioclock.triggers import BaseTrigger
-        from typing import Literal
-
-        class Forever(BaseTrigger[Literal["Forever"]]):
-            type_: Literal["Forever"] = "Forever"
-
-            def should_trigger(self) -> bool:
-                return True
-
-            async def trigger_next(self) -> None:
-                return None
-
-            async def get_waiting_time_till_next_trigger(self):
-                if self.should_trigger():
-                    return 0
-                return None
-        ```
-
-    Attributes:
-        type_: Type of the trigger. It is a string, which is used to identify the trigger's name.
+    If you have a sync IO task, then it's recommended to use `run_in_executor` to run the task in a separate thread.\n    Or use similiar libraries like `asyncer` or `trio` to run the task in a separate thread.\n"""\n\nimport asyncio\nfrom abc import ABC, abstractmethod\nfrom copy import deepcopy\nfrom datetime import datetime, timedelta\nfrom typing import Annotated, Generic, Literal, TypeVar, Union\n\nimport zoneinfo\nfrom annotated_types import Interval\nfrom pydantic import BaseModel, Field, PositiveInt, model_validator\n\nfrom aioclock.custom_types import EveryT, PositiveNumber, Triggers\n\nTriggerTypeT = TypeVar("TriggerTypeT")\n\n\nclass BaseTrigger(BaseModel, ABC, Generic[TriggerTypeT]):\n    """\n    Base class for all triggers.\n    A trigger is a way to determine when the event should be triggered. It can be based on time, or some other condition.\n\n\n    The way trigger are used is as follows:\n        1. An async function which is a task, is decorated with framework, and trigger is the argument for the decorator\n        2. `get_waiting_time_till_next_trigger` is called to get the time in seconds, after which the event should be triggered.\n        3. If the time is not None, then it logs the time that is predicted for the event to be triggered.\n        4. `trigger_next` is called immediately after that, which triggers the event.\n\n    You can create trigger by yourself, by inheriting from `BaseTrigger` class.\n\n    Example:\n        \n        from aioclock.triggers import BaseTrigger\n        from typing import Literal\n\n        class Forever(BaseTrigger[Literal["Forever"]]):\n            type_: Literal["Forever"] = "Forever"\n\n            def should_trigger(self) -> bool:\n                return True\n\n            async def trigger_next(self) -> None:\n                return None\n\n            async def get_waiting_time_till_next_trigger(self):\n                if self.should_trigger():\n                    return 0\n                return None\n        \n\n    Attributes:\n        type_: Type of the trigger. It is a string, which is used to identify the trigger's name.
             You can change the type by using `Generic` type when inheriting from `BaseTrigger`.
-    """
-
-    type_: TriggerTypeT
-    expected_trigger_time: Union[datetime, None] = None
-
-    @abstractmethod
-    async def trigger_next(self) -> None:
-        """
-        `trigger_next` keep track of the event, and triggers the event.
+    """\n\n    type_: TriggerTypeT\n    expected_trigger_time: Union[datetime, None] = None\n\n    @abstractmethod\n    async def trigger_next(self) -> None:\n        """
+        `trigger_next` keeps track of the event, and triggers the event.
         The function shall return when the event is triggered and should be executed.
-        """
-
-    def should_trigger(self) -> bool:
-        """
+        """\n\n    def should_trigger(self) -> bool:\n        """
         `should_trigger` checks if the event should be triggered or not.
         If not, then the event will not be triggered anymore.
         You can save the state of the trigger and task inside the instance, and then check if the event should be triggered or not.
         For instance, in `LoopCounter` trigger, it keeps track of the number of times the event has been triggered,
         and then checks if the event should be triggered or not.
-        """
-        return True
-
-    @abstractmethod
-    async def get_waiting_time_till_next_trigger(self) -> Union[float, None]:
-        """
+        """\n        return True\n\n    @abstractmethod\n    async def get_waiting_time_till_next_trigger(self) -> Union[float, None]:\n        """
         Returns the time in seconds, after which the event should be triggered.
         Returns None, if the event should not trigger anymore.
-        """
-        ...
-
-
-class Forever(BaseTrigger[Literal[Triggers.FOREVER]]):
-    """A trigger that is always triggered imidiately.
+        """\n        ...\n\n\nclass Forever(BaseTrigger[Literal[Triggers.FOREVER]]):\n    """A trigger that is always triggered immediately.
 
     Example:
-        ```python
-
+        
             from aioclock import AioClock, Forever
 
             app = AioClock()
@@ -117,32 +36,10 @@ class Forever(BaseTrigger[Literal[Triggers.FOREVER]]):
             async def my_task():
                 await asyncio.sleep(3)
                 1/0
-        ```
+        
 
     Attributes:
-        type_: Type of the trigger. It is a string, which is used to identify the trigger's name.
-            You can change the type by using `Generic` type when inheriting from `BaseTrigger`.
-
-    """
-
-    type_: Literal[Triggers.FOREVER] = Triggers.FOREVER
-
-    def should_trigger(self) -> bool:
-        return True
-
-    async def trigger_next(self) -> None:
-        return None
-
-    async def get_waiting_time_till_next_trigger(self):
-        return 0
-
-
-class LoopController(BaseTrigger, ABC, Generic[TriggerTypeT]):
-    """
-    Base class for all triggers that have loop control.
-
-    Attributes:
-        type_: Type of the trigger. It is a string, which is used to identify the trigger's name.
+        type_: Type of the trigger. It is a string, which is used to identify the trigger's name.\n            You can change the type by using `Generic` type when inheriting from `BaseTrigger`.\n\n    """\n\n    type_: Literal[Triggers.FOREVER] = Triggers.FOREVER\n\n    def should_trigger(self) -> bool:\n        return True\n\n    async def trigger_next(self) -> None:\n        return None\n\n    async def get_waiting_time_till_next_trigger(self):\n        return 0\n\n\nclass LoopController(BaseTrigger, ABC, Generic[TriggerTypeT]):\n    """\n    Base class for all triggers that have loop control.\n\n    Attributes:\n        type_: Type of the trigger. It is a string, which is used to identify the trigger's name.
             You can change the type by using `Generic` type when inheriting from `LoopController`.
 
         max_loop_count: The maximum number of times the event should be triggered.
@@ -153,125 +50,50 @@ class LoopController(BaseTrigger, ABC, Generic[TriggerTypeT]):
         _current_loop_count: Current loop count, which is used to keep track of the number of times the event has been triggered.
             Private attribute, should not be accessed directly.
             This is available for all triggers that inherit from `LoopController`.
-    """
-
-    type_: TriggerTypeT
-    _current_loop_count: int = 0
-    max_loop_count: Union[PositiveInt, None] = None
-
-    @model_validator(mode="after")
-    def validate_loop_controll(self):
-        if "_current_loop_count" in self.model_fields_set:
-            raise ValueError("_current_loop_count is a private attribute, should not be provided.")
-        return self
-
-    def _increment_loop_counter(self) -> None:
-        self._current_loop_count += 1
-
-    def should_trigger(self) -> bool:
-        if self.max_loop_count is None:
-            return True
-        if self._current_loop_count < self.max_loop_count:
-            return True
-        return False
-
-    async def get_waiting_time_till_next_trigger(self):
-        return 0
-
-
-class Once(LoopController[Literal[Triggers.ONCE]]):
-    """A trigger that is triggered only once. It is used to trigger the event only once, and then stop.
+    """\n\n    type_: TriggerTypeT\n    _current_loop_count: int = 0\n    max_loop_count: Union[PositiveInt, None] = None\n\n    @model_validator(mode="after")\n    def validate_loop_controll(self):\n        if "_current_loop_count" in self.model_fields_set:\n            raise ValueError("_current_loop_count is a private attribute, should not be provided.")\n        return self\n\n    def _increment_loop_counter(self) -> None:\n        self._current_loop_count += 1\n\n    def should_trigger(self) -> bool:\n        if self.max_loop_count is None:\n            return True\n        if self._current_loop_count < self.max_loop_count:\n            return True\n        return False\n\n    async def get_waiting_time_till_next_trigger(self):\n        return 0\n\n\nclass Once(LoopController[Literal[Triggers.ONCE]]):\n    """A trigger that is triggered only once. It is used to trigger the event only once, and then stop.
 
     Example:
-        ```python
+        
         from aioclock import AioClock, Once
         app = AioClock()
 
         app.task(trigger=Once())
         async def task():
             print("Hello World!")
-        ```
-    """
-
-    type_: Literal[Triggers.ONCE] = Triggers.ONCE
-    max_loop_count: Literal[1] = 1
-
-    async def trigger_next(self) -> None:
-        self._increment_loop_counter()
-        return None
-
-    async def get_waiting_time_till_next_trigger(self):
-        if self._current_loop_count == 0:
-            return 0
-        return None
-
-
-class OnStartUp(LoopController[Literal[Triggers.ON_START_UP]]):
-    """Just like Once, but it triggers the event only once, when the application starts up.
+        
+    """\n\n    type_: Literal[Triggers.ONCE] = Triggers.ONCE\n    max_loop_count: Literal[1] = 1\n\n    async def trigger_next(self) -> None:\n        self._increment_loop_counter()\n        return None\n\n    async def get_waiting_time_till_next_trigger(self):\n        if self._current_loop_count == 0:\n            return 0\n        return None\n\n\nclass OnStartUp(LoopController[Literal[Triggers.ON_START_UP]]):\n    """Just like Once, but it triggers the event only once, when the application starts up.
 
     Example:
-        ```python
+        
         from aioclock import AioClock, OnStartUp
         app = AioClock()
 
         app.task(trigger=OnStartUp())
         async def task():
             print("Hello World!")
-        ```
-    """
-
-    type_: Literal[Triggers.ON_START_UP] = Triggers.ON_START_UP
-    max_loop_count: Literal[1] = 1
-
-    async def trigger_next(self) -> None:
-        self._increment_loop_counter()
-        return None
-
-    async def get_waiting_time_till_next_trigger(self):
-        if self._current_loop_count == 0:
-            return 0
-        return None
-
-
-class OnShutDown(LoopController[Literal[Triggers.ON_SHUT_DOWN]]):
-    """Just like Once, but it triggers the event only once, when the application shuts down.
+        
+    """\n\n    type_: Literal[Triggers.ON_START_UP] = Triggers.ON_START_UP\n    max_loop_count: Literal[1] = 1\n\n    async def trigger_next(self) -> None:\n        self._increment_loop_counter()\n        return None\n\n    async def get_waiting_time_till_next_trigger(self):\n        if self._current_loop_count == 0:\n            return 0\n        return None\n\n\nclass OnShutDown(LoopController[Literal[Triggers.ON_SHUT_DOWN]]):\n    """Just like Once, but it triggers the event only once, when the application shuts down.
 
     Example:
-        ```python
+        
         from aioclock import AioClock, OnShutDown
         app = AioClock()
 
         app.task(trigger=OnShutDown())
         async def task():
             print("Hello World!")
-        ```
-    """
-
-    type_: Literal[Triggers.ON_SHUT_DOWN] = Triggers.ON_SHUT_DOWN
-    max_loop_count: Literal[1] = 1
-
-    async def trigger_next(self) -> None:
-        self._increment_loop_counter()
-        return None
-
-    async def get_waiting_time_till_next_trigger(self):
-        if self._current_loop_count == 0:
-            return 0
-        return None
-
-
-class Every(LoopController[Literal[Triggers.EVERY]]):
-    """A trigger that is triggered every x time units.
+        
+    """\n\n    type_: Literal[Triggers.ON_SHUT_DOWN] = Triggers.ON_SHUT_DOWN\n    max_loop_count: Literal[1] = 1\n\n    async def trigger_next(self) -> None:\n        self._increment_loop_counter()\n        return None\n\n    async def get_waiting_time_till_next_trigger(self):\n        if self._current_loop_count == 0:\n            return 0\n        return None\n\n\nclass Every(LoopController[Literal[Triggers.EVERY]]):\n    """A trigger that is triggered every x time units.
 
     Example:
-        ```python
+        
         from aioclock import AioClock, Every
         app = AioClock()
 
         app.task(trigger=Every(seconds=3))
         async def task():
             print("Hello World!")
-        ```
+        
 
     Attributes:
         first_run_strategy: Strategy to use for the first run.
@@ -285,70 +107,10 @@ class Every(LoopController[Literal[Triggers.EVERY]]):
         days: Days to wait before triggering the event.
         weeks: Weeks to wait before triggering the event.
         max_loop_count: The maximum number of times the event should be triggered.
-    """
-
-    type_: Literal[Triggers.EVERY] = Triggers.EVERY
-    first_run_strategy: Literal["immediate", "wait"] = "wait"
-    seconds: Union[PositiveNumber, None] = None
-    minutes: Union[PositiveNumber, None] = None
-    hours: Union[PositiveNumber, None] = None
-    days: Union[PositiveNumber, None] = None
-    weeks: Union[PositiveNumber, None] = None
-    max_loop_count: Union[PositiveInt, None] = None
-
-    @model_validator(mode="after")
-    def validate_time_units(self):
-        if (
-            self.seconds is None
-            and self.minutes is None
-            and self.hours is None
-            and self.days is None
-            and self.weeks is None
-        ):
-            raise ValueError("At least one time unit must be provided.")
-
-        return self
-
-    @property
-    def to_seconds(self) -> float:
-        result = self.seconds or 0
-        if self.weeks is not None:
-            result += self.weeks * 604800
-        if self.days is not None:
-            result += self.days * 86400
-        if self.hours is not None:
-            result += self.hours * 3600
-        if self.minutes is not None:
-            result += self.minutes * 60
-
-        return result
-
-    async def trigger_next(self) -> None:
-        self._increment_loop_counter()
-        if self._current_loop_count == 1 and self.first_run_strategy == "immediate":
-            return None
-        await asyncio.sleep(self.to_seconds)
-        return None
-
-    async def get_waiting_time_till_next_trigger(self):
-        # not incremented yet, so the counter is 0
-        if self._current_loop_count == 0 and self.first_run_strategy == "immediate":
-            return 0
-
-        if self.should_trigger():
-            return self.to_seconds
-        return None
-
-
-WEEK_TO_SECOND = 604800
-
-
-class At(LoopController[Literal[Triggers.AT]]):
-    """A trigger that is triggered at a specific time.
+    """\n\n    type_: Literal[Triggers.EVERY] = Triggers.EVERY\n    first_run_strategy: Literal["immediate", "wait"] = "wait"\n    seconds: Union[PositiveNumber, None] = None\n    minutes: Union[PositiveNumber, None] = None\n    hours: Union[PositiveNumber, None] = None\n    days: Union[PositiveNumber, None] = None\n    weeks: Union[PositiveNumber, None] = None\n    max_loop_count: Union[PositiveInt, None] = None\n\n    @model_validator(mode="after")\n    def validate_time_units(self):\n        if (\n            self.seconds is None\n            and self.minutes is None\n            and self.hours is None\n            and self.days is None\n            and self.weeks is None\n        ):\n            raise ValueError("At least one time unit must be provided.")\n\n        return self\n\n    @property\n    def to_seconds(self) -> float:\n        result = self.seconds or 0\n        if self.weeks is not None:\n            result += self.weeks * 604800\n        if self.days is not None:\n            result += self.days * 86400\n        if self.hours is not None:\n            result += self.hours * 3600\n        if self.minutes is not None:\n            result += self.minutes * 60\n\n        return result\n\n    async def trigger_next(self) -> None:\n        self._increment_loop_counter()\n        if self._current_loop_count == 1 and self.first_run_strategy == "immediate":\n            return None\n        await asyncio.sleep(self.to_seconds)\n        return None\n\n    async def get_waiting_time_till_next_trigger(self):\n        # not incremented yet, so the counter is 0\n        if self._current_loop_count == 0 and self.first_run_strategy == "immediate":\n            return 0\n\n        if self.should_trigger():\n            return self.to_seconds\n        return None\n\n\nWEEK_TO_SECOND = 604800\n\n\nclass At(LoopController[Literal[Triggers.AT]]):\n    """A trigger that is triggered at a specific time.
 
     Example:
-        ```python
-
+        
         from aioclock import AioClock, At
 
         app = AioClock()
@@ -356,159 +118,13 @@ class At(LoopController[Literal[Triggers.AT]]):
         @app.task(trigger=At(hour=12, minute=30, tz="Asia/Kolkata"))
         async def task():
             print("Hello World!")
-        ```
+        
 
     Attributes:
         second: Second to trigger the event.
         minute: Minute to trigger the event.
         hour: Hour to trigger the event.
-        at: Day of week to trigger the event. You would get the in-line typing support when using the trigger.
+        at: Day of week to trigger the event. You would get the inline typing support when using the trigger.
         tz: Timezone to use for the event.
         max_loop_count: The maximum number of times the event should be triggered.
-
-    """
-
-    type_: Literal[Triggers.AT] = Triggers.AT
-    max_loop_count: Union[PositiveInt, None] = None
-    second: Annotated[int, Interval(ge=0, le=59)] = 0
-    minute: Annotated[int, Interval(ge=0, le=59)] = 0
-    hour: Annotated[int, Interval(ge=0, le=24)] = 0
-    at: Literal[
-        "every monday",
-        "every tuesday",
-        "every wednesday",
-        "every thursday",
-        "every friday",
-        "every saturday",
-        "every sunday",
-        "every day",
-    ] = "every day"
-    tz: str
-
-    @model_validator(mode="after")
-    def validate_time_units(self):
-        if self.second is None and self.minute is None and self.hour is None:
-            raise ValueError("At least one time unit must be provided.")
-
-        if self.tz is not None:
-            try:
-                zoneinfo.ZoneInfo(self.tz)
-            except Exception as error:
-                raise ValueError(f"Invalid timezone provided: {error}")
-
-        return self
-
-    def _shift_to_week(self, target_time: datetime, tz_aware_now: datetime):
-        target_weekday: dict[EveryT, Union[int, None]] = {
-            "every monday": 0,
-            "every tuesday": 1,
-            "every wednesday": 2,
-            "every thursday": 3,
-            "every friday": 4,
-            "every saturday": 5,
-            "every sunday": 6,
-            "every day": None,
-        }[self.at]
-
-        if target_weekday is None:
-            if target_time < tz_aware_now:
-                target_time += timedelta(days=1)
-            return target_time
-
-        days_ahead = target_weekday - tz_aware_now.weekday()  # type: ignore
-        if days_ahead <= 0:
-            days_ahead += 7
-
-        if self.at == "every day":
-            target_time += timedelta(days=(1 if target_time < tz_aware_now else 0))
-            return target_time
-
-        # 1 second error
-        error_margin = WEEK_TO_SECOND - 1
-        if days_ahead == 7 and target_time.timestamp() - tz_aware_now.timestamp() < error_margin:
-            # date is today, and event is about to be triggered today. so no need to shift to 7 days.
-            return target_time
-
-        return target_time + timedelta(days_ahead)
-
-    def _get_next_ts(self, now: datetime) -> float:
-        target_time = deepcopy(now).replace(
-            hour=self.hour, minute=self.minute, second=self.second, microsecond=0
-        )
-        target_time = self._shift_to_week(target_time, now)
-        return (target_time - now).total_seconds()
-
-    def get_waiting_time_till_next_trigger(self, now: Union[datetime, None] = None):
-        if now is None:
-            now = datetime.now(tz=zoneinfo.ZoneInfo(self.tz))
-
-        sleep_for = self._get_next_ts(now)
-        return sleep_for
-
-    async def trigger_next(self) -> None:
-        self._increment_loop_counter()
-        await asyncio.sleep(self.get_waiting_time_till_next_trigger())
-
-
-class Cron(LoopController[Literal[Triggers.CRON]]):
-    """A trigger that is triggered at a specific time, using cron job format.
-
-    Example:
-        ```python
-        from aioclock import AioClock, Cron
-
-        app = AioClock()
-
-        @app.task(trigger=Cron(cron="0 12 * * *", tz="Asia/Kolkata"))
-        async def task():
-            print("Hello World!")
-        ```
-
-    Attributes:
-        cron: Cron job format to trigger the event.
-        tz: Timezone to use for the event.
-        max_loop_count: The maximum number of times the event should be triggered.
-    """
-
-    type_: Literal[Triggers.CRON] = Triggers.CRON
-    max_loop_count: Union[PositiveInt, None] = None
-    cron: str
-    tz: str
-
-    @model_validator(mode="after")
-    def validate_time_units(self):
-        if self.tz is not None:
-            try:
-                zoneinfo.ZoneInfo(self.tz)
-            except Exception as error:
-                raise ValueError(f"Invalid timezone provided: {error}")
-
-        if croniter.is_valid(self.cron) is False:
-            raise ValueError("Invalid cron format provided.")
-        return self
-
-    def get_waiting_time_till_next_trigger(self, now: Union[datetime, None] = None):
-        if now is None:
-            now = datetime.now(tz=zoneinfo.ZoneInfo(self.tz))
-
-        cron_iter = croniter(self.cron, now)
-        next_dt: datetime = cron_iter.get_next(datetime)
-        return (next_dt - now).total_seconds()
-
-    async def trigger_next(self) -> None:
-        self._increment_loop_counter()
-        await asyncio.sleep(self.get_waiting_time_till_next_trigger())
-
-
-TriggerT = Annotated[
-    Union[
-        Forever,
-        Once,
-        Every,
-        At,
-        OnStartUp,
-        OnShutDown,
-        Cron,
-    ],
-    Field(discriminator="type_"),
-]
+    """\n\n    type_: Literal[Triggers.AT] = Triggers.AT\n    max_loop_count: Union[PositiveInt, None] = None\n    second: Annotated[int, Interval(ge=0, le=59)] = 0\n    minute: Annotated[int, Interval(ge=0, le=59)] = 0\n    hour: Annotated[int, Interval(ge=0, le=24)] = 0\n    at: Literal[\n        "every monday",\n        "every tuesday",\n        "every wednesday",\n        "every thursday",\n        "every friday",\n        "every saturday",\n        "every sunday",\n        "every day",\n    ] = "every day"\n    tz: str\n\n    @model_validator(mode="after")\n    def validate_time_units(self):\n        if self.second is None and self.minute is None and self.hour is None:\n            raise ValueError("At least one time unit must be provided.")\n\n        if self.tz is not None:\n            try:\n                zoneinfo.ZoneInfo(self.tz)\n            except Exception as error:\n                raise ValueError(f"Invalid timezone provided: {error}")\n\n        return self\n\n    def _shift_to_week(self, target_time: datetime, tz_aware_now: datetime):\n        target_weekday: dict[EveryT, Union[int, None]] = {\n            "every monday": 0,\n            "every tuesday": 1,\n            "every wednesday": 2,\n            "every thursday": 3,\n            "every friday": 4,\n            "every saturday": 5,\n            "every sunday": 6,\n            "every day": None,\n        }[self.at]\n\n        if target_weekday is None:\n            if target_time < tz_aware_now:\n                target_time += timedelta(days=1)\n            return target_time\n\n        days_ahead = target_weekday - tz_aware_now.weekday()  # type: ignore\n        if days_ahead <= 0:\n            days_ahead += 7\n\n        if self.at == "every day":\n            target_time += timedelta(days=(1 if target_time < tz_aware_now else 0))\n            return target_time\n\n        # 1 second error\n        error_margin = WEEK_TO_SECOND - 1\n        if days_ahead == 7 and target_time.timestamp() - tz_aware_now.timestamp() < error_margin:\n            # date is today, and event is about to be triggered today. so no need to shift to 7 days.\n            return target_time\n\n        return target_time + timedelta(days_ahead)\n\n    def _get_next_ts(self, now: datetime) -> float:\n        target_time = deepcopy(now).replace(\n            hour=self.hour, minute=self.minute, second=self.second, microsecond=0\n        )\n        target_time = self._shift_to_week(target_time, now)\n        return (target_time - now).total_seconds()\n\n    def get_sleep_time(self):\n        now = datetime.now(tz=zoneinfo.ZoneInfo(self.tz))\n        sleep_for = self._get_next_ts(now)\n        return sleep_for\n\n    async def get_waiting_time_till_next_trigger(self):\n        return self.get_sleep_time()\n\n    async def trigger_next(self) -> None:\n        self._increment_loop_counter()\n        await asyncio.sleep(self.get_sleep_time())\n\n\nTriggerT = Annotated[\n    Union[Forever, Once, Every, At, OnStartUp, OnShutDown], Field(discriminator="type_")\n]
